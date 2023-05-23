@@ -10,7 +10,7 @@ export interface Order extends GenericMessage {
     coin: string;
     direction: string;
     exchange: string;
-    leverage: string;
+    leverage: number;
     entry: number[];
     ote?: number;
     targets: number[];
@@ -30,7 +30,9 @@ export interface StopLoss extends GenericMessage { type: 'SL'; coin: string; exc
 export interface TakeProfit extends GenericMessage { type: 'TP'; coin: string; exchange: string; tp: number; pctStr: string; pct: number; time: string; }
 export interface TakeProfitAll extends GenericMessage {type: 'TPAll'; coin: string; exchange: string; pctStr: string; pct: number; time: string; }
 
-export type Message = Order | Entry | EntryAll | Close | Cancel | Opposite | SLAfterTP | StopLoss | TakeProfit | TakeProfitAll;
+export interface UnknownMessage extends GenericMessage { type: 'unknown', text: string };
+
+export type Message = Order | Entry | EntryAll | Close | Cancel | Opposite | SLAfterTP | StopLoss | TakeProfit | TakeProfitAll | UnknownMessage;
 
 export interface OrderDetail { order: Order; entries: Entry[]; tps: TakeProfit[]; sl: StopLoss[]; other: Message[]; maxReachedEntry: number; maxReachedTp: number; avgEntryPrice: number; avgTpValue: number; pnl: number; closed: boolean; lev: number; }
 
@@ -75,7 +77,7 @@ export function getReferencedMessageId(messageDiv: HTMLElement) {
 }
 
 export function parseOrder(messageDiv: HTMLElement): Partial<Order> | null {
-    const pattern = /COIN: (.+)Direction: (.+)Exchange: (.+)Leverage: (.+)ENTRY: (.+)TARGETS: (.+)STOP LOSS: (.+)/g;
+    const pattern = /COIN: \$?(.+)Direction: (.+)Exchange: (.+)Leverage: (.+)ENTRY: (.+)TARGETS: (.+)STOP LOSS: (.+)/g;
 
     const message = messageDiv.innerText ?? '';
 
@@ -84,7 +86,7 @@ export function parseOrder(messageDiv: HTMLElement): Partial<Order> | null {
       const coin = match[1];
       const direction = match[2];
       const exchange = match[3];
-      const leverage = match[4];
+      const leverage = parseInt(match[4].replace('x', ''));
       const entry = match[5].trim().split(" - ").map(x => x.trim().replace(",", "")).map(x => parseFloat(x));
       const targets = match[6].trim().split(" - ").map(x => x.trim().replace(",", "")).map(x => parseFloat(x));
       const stopLoss = parseFloat(match[7].trim().replace(",", ""));
@@ -107,7 +109,7 @@ export function parseOrder(messageDiv: HTMLElement): Partial<Order> | null {
 }
 
 export function parseOrder2(messageDiv: HTMLElement): Partial<Order> | null {
-    const pattern = /COIN: (.+)\nDirection: (.+)\nExchange: (.+)\nLeverage: (.+)\n\nENTRY: (.+)\nOTE: (.+)\n\nTARGETS\nShort Term: (.+)\nMid Term: (.+)\n\nSTOP LOSS: (.+)/g;
+    const pattern = /COIN: \$?(.+)\nDirection: (.+)\nExchange: (.+)\nLeverage: (.+)\n\nENTRY: (.+)\nOTE: (.+)\n\nTARGETS\nShort Term: (.+)\nMid Term: (.+)\n\nSTOP LOSS: (.+)/g;
 
     const message = messageDiv.textContent ?? '';
 
@@ -116,7 +118,7 @@ export function parseOrder2(messageDiv: HTMLElement): Partial<Order> | null {
       const coin = match[1];
       const direction = match[2];
       const exchange = match[3];
-      const leverage = match[4];
+      const leverage = parseInt(match[4].replace('x', ''));
       const entry = match[5].trim().split(" - ").map(x => x.trim().replace(",", "")).map(x => parseFloat(x));
       const ote = parseFloat(match[6].trim().replace(",", ""));
       const shortTermTargets = match[7].split(" - ").map(x => x.trim().replace(",", "")).map(x => parseFloat(x));
@@ -146,7 +148,7 @@ export function parseOrder2(messageDiv: HTMLElement): Partial<Order> | null {
 
 
 export function parseSpotOrder(messageDiv: HTMLElement): Partial<Order> | null {
-    const pattern = /COIN: (.+)Direction: (.+)(.+)ENTRY: (.+)TARGETS: (.+)STOP LOSS: (.+)/g;
+    const pattern = /COIN: \$?(.+)Direction: (.+)ENTRY: (.+)TARGETS: (.+)STOP LOSS: (.+)/g;
 
     const message = messageDiv.textContent ?? '';
 
@@ -154,14 +156,14 @@ export function parseSpotOrder(messageDiv: HTMLElement): Partial<Order> | null {
     if (match) {
       const coin = match[1].trim();
       const direction = match[2].trim();
-      const entry = match[4].trim().split(" - ").map(x => x.trim().replace(",", "")).map(x => parseFloat(x));
-      const targets = match[5].trim().split(" - ").map(x => x.trim().replace(",", "")).map(x => parseFloat(x));
-      const stopLoss = parseFloat(match[6].trim().replace(",", ""));
+      const entry = match[3].trim().split(" - ").map(x => x.trim().replace(",", "")).map(x => parseFloat(x));
+      const targets = match[4].trim().split(" - ").map(x => x.trim().replace(",", "")).map(x => parseFloat(x));
+      const stopLoss = parseFloat(match[5].trim().replace(",", ""));
 
       const parsedMessage = {
         type: 'spotOrder' as any,
         exchange: '',
-        leverage: '1x',
+        leverage: 1,
         coin: coin,
         direction: direction,
         entry: entry,
@@ -176,7 +178,7 @@ export function parseSpotOrder(messageDiv: HTMLElement): Partial<Order> | null {
 }
 
 export function parseEntry(messageDiv: HTMLElement): Partial<Entry> | null {
-    const entryPattern = /(.*)\n(.*) Entry (?:target )?(\d+).*\nAverage Entry Price: (\d*\.?\d*)/gm;
+    const entryPattern = /(.*)\n?\#(.*) Entry (?:target )?(\d+).*\n?Average Entry Price: (\d*\.?\d*)/gm;
     const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
 
     const entryMatch = entryPattern.exec(message);
@@ -204,7 +206,7 @@ export function parseEntry(messageDiv: HTMLElement): Partial<Entry> | null {
 }
 
 export function parseEntryAll(messageDiv: HTMLElement): Partial<EntryAll> | null {
-    const entryPattern = /(.*)\n(.*) All entry targets achieved\nAverage Entry Price: (\d*\.?\d*)/gm;
+    const entryPattern = /(.*)\n?#(.*) All entry targets achieved\n?Average Entry Price: (\d*\.?\d*)/gm;
     const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
 
     const entryMatch = entryPattern.exec(message);
@@ -252,7 +254,7 @@ export function parseClose(messageDiv: HTMLElement): Partial<Close> | null {
 }
 
 export function parseCancelled(messageDiv: HTMLElement): Partial<Cancel> | null {
-    const entryPattern = /(.*)\n(.*) Cancelled ❌\nTarget achieved before entering the entry zone/;
+    const entryPattern = /(.*)\n?#(.*) Cancelled ❌\n?Target achieved before entering the entry zone/;
     const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
 
     const match = entryPattern.exec(message);
@@ -276,7 +278,7 @@ export function parseCancelled(messageDiv: HTMLElement): Partial<Cancel> | null 
 
 
 export function parseOpposite(messageDiv: HTMLElement): Partial<Opposite> | null {
-    const pattern = /(.*)\n(.*) Closed due to opposite direction signal.*/gm;
+    const pattern = /(.*)\n?#(.*) Closed due to opposite direction signal/gm;
     const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
 
     const match = pattern.exec(message);
@@ -300,7 +302,7 @@ export function parseOpposite(messageDiv: HTMLElement): Partial<Opposite> | null
 
 
 export function parseSLAfterTP(messageDiv: HTMLElement): Partial<SLAfterTP> | null {
-    const pattern = /(.*)\n(.*) Closed at stoploss after reaching take profit/gm;
+    const pattern = /(.*)\n?#(.*) Closed at .*stoploss after reaching take profit/gm;
     const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
 
     const match = pattern.exec(message);
@@ -325,7 +327,7 @@ export function parseSLAfterTP(messageDiv: HTMLElement): Partial<SLAfterTP> | nu
 
 
 export function parseSL(messageDiv: HTMLElement): Partial<StopLoss> | null {
-    const pattern = /(.*)\n?(.*) Stoploss ⛔\n?Loss: ([\d\.\%]+) 📉/gm;
+    const pattern = /(.*)\n?#(.*) Stoploss ⛔\n?Loss: ([\d\.\%]+) 📉/gm;
     const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
 
     const match = pattern.exec(message);
@@ -383,8 +385,39 @@ export function parseTP(messageDiv: HTMLElement): Partial<TakeProfit> | null {
     return null;
 }
 
+export function parseTPWithoutProfit(messageDiv: HTMLElement): Partial<TakeProfit> | null {
+    const pattern = /(.*)\n?#(.*) Take-Profit target (\d+) ✅\n?\n?Period: (.*) ⏰/gm;
+    const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
+
+    const match = pattern.exec(message);
+
+    if (match) {
+        const referencedMessageId = getReferencedMessageId(messageDiv);
+        const exchange = match[1];
+        const coin = match[2];
+        const tp = parseInt(match[3]);
+        const time = match[5];
+
+        const parsedEntry = {
+              relatedTo: referencedMessageId,
+              type: 'TP' as any,
+              coin: coin,
+              exchange,
+              tp,
+              pctStr: '0',
+              pct: 0,
+              time
+          };
+
+        return parsedEntry;
+    }
+
+    return null;
+}
+
+
 export function parseTPAll(messageDiv: HTMLElement): Partial<TakeProfitAll> | null {
-    const pattern = /(.*)\n(.*) All take-profit targets achieved 😎\nProfit: ([\d\.\%]+) .*\nPeriod: (.*) ⏰/gm;
+    const pattern = /(.*)\n?#(.*) All take-profit targets achieved 😎\n?Profit: ([\d\.\%]+) .*\n?Period: (.*) ⏰/gm;
     const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
 
     const match = pattern.exec(message);
@@ -431,6 +464,7 @@ export function parseMessage(messageDiv: HTMLElement): Message {
         ?? parseTP(messageDiv)
         ?? parseTPAll(messageDiv)
         ?? parseCancelled(messageDiv)
+        ?? parseTPWithoutProfit(messageDiv)
         ?? { text: message, 'type': 'unknown' };
 
     return { ...result, messageId, date } as any;
@@ -461,7 +495,7 @@ export function getOrderSignalInfoFull(signal: Message, groupedSignals: { [key: 
     const tpsAsInt = tps.map(x => x.tp);
     const maxReachedTp = Math.max(...tpsAsInt);
 
-    const lev = order.leverage ? parseInt(order.leverage.replace('x', '')) : 1;
+    const lev = order.leverage ?? 1;
 
     const orderTps = order.targets.map(x => x);
     const avgTpValue = orderTps.filter((x, idx) => idx + 1 <= maxReachedTp)
@@ -503,7 +537,7 @@ export function updateOrderDetailWithSL(orderDetail: OrderDetail, sl: StopLoss) 
     const entries = orderDetail.order.entry;
     const avgEntryPrice = entries.reduce((sum, entry) => entry + sum, 0) / entries.length;
     const maxReachedEntry = entries.length;
-    const lev = orderDetail.order.leverage ? parseInt(orderDetail.order.leverage.replace('x', '')) : 1;
+    const lev = orderDetail.order.leverage ?? 1;
 
     const sumLossPct = Math.abs(orderDetail.order.stopLoss - avgEntryPrice) / avgEntryPrice * lev * 100;
 

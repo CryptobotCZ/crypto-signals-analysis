@@ -7,7 +7,7 @@ if (import.meta.main) {
 
 }
 
-const directory = './binance-killers-history';
+const directory = './data/binance-killers-history';
 
 async function parseAll() {
   let messages: Message[] = [];
@@ -29,7 +29,7 @@ async function parseAll() {
 }
 
 async function parseLatest() {
-  const fileContent = await Deno.readTextFile(`${directory}/messages17.html`);
+  const fileContent = await Deno.readTextFile(`${directory}/messages16.html`);
 
   const document = new DOMParser().parseFromString(fileContent, 'text/html');
 
@@ -39,14 +39,28 @@ async function parseLatest() {
   return messagesFromFile;
 }
 
-const messages = await parseLatest();
+const messages = await parseAll();
+
+const messageStats = messages.reduce((agg: any, x) => {
+  if (!Object.hasOwn(agg, x.type)) {
+    agg[x.type] = 0;
+  }
+
+  agg[x.type]++;
+
+  return agg;
+}, {});
+
+console.log({ messageStats });
+
+const unknownMessages = messages.filter(x => x.type === 'unknown');
 
 const groupedSignals = groupRelatedSignals(messages);
 const orderSignals = getOrderSignals(messages).map(x => getOrderSignalInfoFull(x, groupedSignals)) as OrderDetail[];
 
 const slSignals = messages.filter(x => x.type == 'SL') as StopLoss[];
 slSignals.forEach(x => mapSLToOrder(x, orderSignals, groupedSignals, messages));
-//
+
 const binanceFuturesSignals = orderSignals.filter(x => x.order?.exchange == "Binance Futures");
 const binanceFuturesProfitable = binanceFuturesSignals.filter(x => x.tps.length > 1);
 
@@ -58,3 +72,6 @@ console.log( { sumTpPcts, avgTpPcts });
 const binanceFuturesSL = binanceFuturesSignals.filter(x => x.sl.length > 1);
 
 console.log(binanceFuturesSL.length);
+
+const signalsWithoutTpAndSl = orderSignals.filter(x => x.sl.length == 0 && x.tps.length == 0 && x.entries.length == 0);
+console.log({ signalsWithoutTpAndSl: signalsWithoutTpAndSl.length });
