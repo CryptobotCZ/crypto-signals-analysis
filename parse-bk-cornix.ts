@@ -1,4 +1,40 @@
-function parseDate(dateString) {
+export interface GenericMessage {
+    relatedTo?: string | null;
+    type: string;
+    date: Date;
+    messageId: string;
+}
+
+export interface Order extends GenericMessage {
+    type: 'order' | 'spotOrder';
+    coin: string;
+    direction: string;
+    exchange: string;
+    leverage: string;
+    entry: number[];
+    ote?: number;
+    targets: number[];
+    shortTermTargets?: number[];
+    midTermTargets?: number[];
+
+    stopLoss: number;
+}
+
+export interface Entry extends GenericMessage {  type: 'entry'; coin: string; exchange: string; entry: number; price: number; }
+export interface EntryAll extends GenericMessage  { type: 'entryAll'; coin: string; exchange: string; price: number; }
+export interface Close extends GenericMessage { type: 'close'; coin: string; }
+export interface Cancel extends GenericMessage { type: 'cancelled'; coin: string; exchange: string; }
+export interface Opposite extends GenericMessage { type: 'opposite'; coin: string; exchange: string; }
+export interface SLAfterTP extends GenericMessage { type: 'SLTP'; coin: string; exchange: string; }
+export interface StopLoss extends GenericMessage { type: 'SL'; coin: string; exchange: string; pct: number; }
+export interface TakeProfit extends GenericMessage { type: 'TP'; coin: string; exchange: string; tp: number; pctStr: string; pct: number; time: string; }
+export interface TakeProfitAll extends GenericMessage {type: 'TPAll'; coin: string; exchange: string; pctStr: string; pct: number; time: string; }
+
+export type Message = Order | Entry | EntryAll | Close | Cancel | Opposite | SLAfterTP | StopLoss | TakeProfit | TakeProfitAll;
+
+export interface OrderDetail { order: Order; entries: Entry[]; tps: TakeProfit[]; sl: StopLoss[]; other: Message[]; maxReachedEntry: number; maxReachedTp: number; avgEntryPrice: number; avgTpValue: number; pnl: number; closed: boolean; lev: number; }
+
+export function parseDate(dateString: string) {
     const parts = dateString.split(" ");
     const dateParts = parts[0].split(".");
     const timeParts = parts[1].split(":");
@@ -21,13 +57,13 @@ function parseDate(dateString) {
     return date;
 }
 
-function getReferencedMessageId(messageDiv) {
+export function getReferencedMessageId(messageDiv: HTMLElement) {
     const replyTo = messageDiv.getElementsByClassName('reply_to');
     if (replyTo.length > 0) {
       const a = Array.from(Array.from(replyTo)[0].getElementsByTagName('a'));
 
       if (a.length > 0) {
-          const link = a[0].getAttribute('href').split('go_to_');
+          const link = a[0].getAttribute('href')?.split('go_to_') ?? [];
 
           if (link.length == 2) {
               return link[1];
@@ -38,10 +74,10 @@ function getReferencedMessageId(messageDiv) {
     return null;
 }
 
-function parseOrder(messageDiv) {
+export function parseOrder(messageDiv: HTMLElement): Partial<Order> | null {
     const pattern = /COIN: (.+)Direction: (.+)Exchange: (.+)Leverage: (.+)ENTRY: (.+)TARGETS: (.+)STOP LOSS: (.+)/g;
 
-    const message = messageDiv.textContent;
+    const message = messageDiv.innerText ?? '';
 
     const match = pattern.exec(message.trim());
     if (match) {
@@ -54,7 +90,7 @@ function parseOrder(messageDiv) {
       const stopLoss = parseFloat(match[7].trim().replace(",", ""));
 
       const parsedMessage = {
-        type: 'order',
+        type: 'order' as any,
         coin: coin,
         direction: direction,
         exchange: exchange,
@@ -70,10 +106,10 @@ function parseOrder(messageDiv) {
   return null;
 }
 
-function parseOrder2(messageDiv) {
+export function parseOrder2(messageDiv: HTMLElement): Partial<Order> | null {
     const pattern = /COIN: (.+)\nDirection: (.+)\nExchange: (.+)\nLeverage: (.+)\n\nENTRY: (.+)\nOTE: (.+)\n\nTARGETS\nShort Term: (.+)\nMid Term: (.+)\n\nSTOP LOSS: (.+)/g;
 
-    const message = messageDiv.textContent;
+    const message = messageDiv.textContent ?? '';
 
     const match = pattern.exec(message);
     if (match) {
@@ -89,7 +125,7 @@ function parseOrder2(messageDiv) {
       const stopLoss = parseFloat(match[9].trim().replace(",", ""));
 
       const parsedMessage = {
-        type: 'order',
+        type: 'order' as any,
         coin: coin,
         direction: direction,
         exchange: exchange,
@@ -109,10 +145,10 @@ function parseOrder2(messageDiv) {
 }
 
 
-function parseSpotOrder(messageDiv) {
+export function parseSpotOrder(messageDiv: HTMLElement): Partial<Order> | null {
     const pattern = /COIN: (.+)Direction: (.+)(.+)ENTRY: (.+)TARGETS: (.+)STOP LOSS: (.+)/g;
 
-    const message = messageDiv.textContent;
+    const message = messageDiv.textContent ?? '';
 
     const match = pattern.exec(message.trim());
     if (match) {
@@ -123,7 +159,9 @@ function parseSpotOrder(messageDiv) {
       const stopLoss = parseFloat(match[6].trim().replace(",", ""));
 
       const parsedMessage = {
-        type: 'spotOrder',
+        type: 'spotOrder' as any,
+        exchange: '',
+        leverage: '1x',
         coin: coin,
         direction: direction,
         entry: entry,
@@ -137,9 +175,9 @@ function parseSpotOrder(messageDiv) {
   return null;
 }
 
-function parseEntry(messageDiv) {
+export function parseEntry(messageDiv: HTMLElement): Partial<Entry> | null {
     const entryPattern = /(.*)\n(.*) Entry (?:target )?(\d+).*\nAverage Entry Price: (\d*\.?\d*)/gm;
-    const message = messageDiv.getElementsByClassName('text')[0].innerText.trim();
+    const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
 
     const entryMatch = entryPattern.exec(message);
     if (entryMatch) {
@@ -152,7 +190,7 @@ function parseEntry(messageDiv) {
 
         const parsedEntry = {
               relatedTo: referencedMessageId,
-              type: 'entry',
+              type: 'entry' as any,
               coin: coin,
               exchange,
               entry,
@@ -165,9 +203,9 @@ function parseEntry(messageDiv) {
     return null;
 }
 
-function parseEntryAll(messageDiv) {
+export function parseEntryAll(messageDiv: HTMLElement): Partial<EntryAll> | null {
     const entryPattern = /(.*)\n(.*) All entry targets achieved\nAverage Entry Price: (\d*\.?\d*)/gm;
-    const message = messageDiv.getElementsByClassName('text')[0].innerText.trim();
+    const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
 
     const entryMatch = entryPattern.exec(message);
     if (entryMatch) {
@@ -179,7 +217,7 @@ function parseEntryAll(messageDiv) {
 
         const parsedEntry = {
             relatedTo: referencedMessageId,
-            type: 'entryAll',
+            type: 'entryAll' as any,
             coin: coin,
             exchange,
             price
@@ -191,9 +229,10 @@ function parseEntryAll(messageDiv) {
     return null;
 }
 
-function parseClose(messageDiv) {
+
+export function parseClose(messageDiv: HTMLElement): Partial<Close> | null {
     const entryPattern = /CLOSE (.*)/;
-    const message = messageDiv.getElementsByClassName('text')[0].innerText.trim();
+    const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
 
     const match = entryPattern.exec(message);
     if (match) {
@@ -202,7 +241,7 @@ function parseClose(messageDiv) {
 
         const parsedEntry = {
               relatedTo: referencedMessageId,
-              type: 'close',
+              type: 'close' as any,
               coin: coin
         };
 
@@ -212,9 +251,9 @@ function parseClose(messageDiv) {
     return null;
 }
 
-function parseCancelled(messageDiv) {
+export function parseCancelled(messageDiv: HTMLElement): Partial<Cancel> | null {
     const entryPattern = /(.*)\n(.*) Cancelled ❌\nTarget achieved before entering the entry zone/;
-    const message = messageDiv.getElementsByClassName('text')[0].innerText.trim();
+    const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
 
     const match = entryPattern.exec(message);
     if (match) {
@@ -224,7 +263,7 @@ function parseCancelled(messageDiv) {
 
         const parsedEntry = {
             relatedTo: referencedMessageId,
-            type: 'cancelled',
+            type: 'cancelled' as any,
             coin,
             exchange
         };
@@ -235,9 +274,10 @@ function parseCancelled(messageDiv) {
     return null;
 }
 
-function parseOpposite(messageDiv) {
+
+export function parseOpposite(messageDiv: HTMLElement): Partial<Opposite> | null {
     const pattern = /(.*)\n(.*) Closed due to opposite direction signal.*/gm;
-    const message = messageDiv.getElementsByClassName('text')[0].innerText.trim();
+    const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
 
     const match = pattern.exec(message);
     if (match) {
@@ -247,7 +287,7 @@ function parseOpposite(messageDiv) {
 
         const parsedEntry = {
             relatedTo: referencedMessageId,
-            type: 'close',
+            type: 'close' as any,
             coin: coin,
             exchange
         };
@@ -258,9 +298,10 @@ function parseOpposite(messageDiv) {
     return null;
 }
 
-function parseSLAfterTP(messageDiv) {
+
+export function parseSLAfterTP(messageDiv: HTMLElement): Partial<SLAfterTP> | null {
     const pattern = /(.*)\n(.*) Closed at stoploss after reaching take profit/gm;
-    const message = messageDiv.getElementsByClassName('text')[0].innerText.trim();
+    const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
 
     const match = pattern.exec(message);
 
@@ -271,7 +312,7 @@ function parseSLAfterTP(messageDiv) {
 
         const parsedEntry = {
               relatedTo: referencedMessageId,
-              type: 'SLTP',
+              type: 'SLTP' as any,
               coin: coin,
               exchange
           };
@@ -282,9 +323,10 @@ function parseSLAfterTP(messageDiv) {
     return null;
 }
 
-function parseSL(messageDiv) {
-    const pattern = /(.*)\n(.*) Stoploss ⛔\nLoss: ([\d\.\%]+) 📉/gm;
-    const message = messageDiv.getElementsByClassName('text')[0].innerText.trim();
+
+export function parseSL(messageDiv: HTMLElement): Partial<StopLoss> | null {
+    const pattern = /(.*)\n?(.*) Stoploss ⛔\n?Loss: ([\d\.\%]+) 📉/gm;
+    const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
 
     const match = pattern.exec(message);
 
@@ -297,7 +339,7 @@ function parseSL(messageDiv) {
 
         const parsedEntry = {
               relatedTo: referencedMessageId,
-              type: 'SL',
+              type: 'SL' as any,
               coin: coin,
               exchange,
               pct
@@ -309,10 +351,9 @@ function parseSL(messageDiv) {
     return null;
 }
 
-
-function parseTP(messageDiv) {
-    const pattern = /(.*)\n(.*) Take-Profit target (\d+) ✅\nProfit: ([\d\.\%]+) 📈\nPeriod: (.*) ⏰/gm;
-    const message = messageDiv.getElementsByClassName('text')[0].innerText.trim();
+export function parseTP(messageDiv: HTMLElement): Partial<TakeProfit> | null {
+    const pattern = /(.*)\n?#(.*) Take-Profit target (\d+) ✅\n?Profit: ([\d\.\%]+) 📈\n?Period: (.*) ⏰/gm;
+    const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
 
     const match = pattern.exec(message);
 
@@ -327,7 +368,7 @@ function parseTP(messageDiv) {
 
         const parsedEntry = {
               relatedTo: referencedMessageId,
-              type: 'TP',
+              type: 'TP' as any,
               coin: coin,
               exchange,
               tp,
@@ -342,9 +383,9 @@ function parseTP(messageDiv) {
     return null;
 }
 
-function parseTPAll(messageDiv) {
+export function parseTPAll(messageDiv: HTMLElement): Partial<TakeProfitAll> | null {
     const pattern = /(.*)\n(.*) All take-profit targets achieved 😎\nProfit: ([\d\.\%]+) .*\nPeriod: (.*) ⏰/gm;
-    const message = messageDiv.getElementsByClassName('text')[0].innerText.trim();
+    const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
 
     const match = pattern.exec(message);
 
@@ -358,7 +399,7 @@ function parseTPAll(messageDiv) {
 
         const parsedEntry = {
             relatedTo: referencedMessageId,
-            type: 'TPAll',
+            type: 'TPAll' as any,
             coin: coin,
             exchange,
             pctStr,
@@ -373,12 +414,12 @@ function parseTPAll(messageDiv) {
 }
 
 
-function parseMessage(messageDiv) {
-    const messageId = messageDiv.getAttribute('id');
-    const date = parseDate(messageDiv.getElementsByClassName('date')[0].getAttribute('title'));
-    const message = messageDiv.getElementsByClassName('text')[0].innerText.trim();
+export function parseMessage(messageDiv: HTMLElement): Message {
+    const messageId = messageDiv.getAttribute('id')!;
+    const date = parseDate((messageDiv.getElementsByClassName('date')?.[0] as HTMLElement)?.getAttribute('title') ?? '');
+    const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
 
-    let result = parseOrder(messageDiv)
+    const result = parseOrder(messageDiv)
         ?? parseOrder2(messageDiv)
         ?? parseSpotOrder(messageDiv)
         ?? parseEntry(messageDiv)
@@ -392,16 +433,16 @@ function parseMessage(messageDiv) {
         ?? parseCancelled(messageDiv)
         ?? { text: message, 'type': 'unknown' };
 
-    return { ...result, messageId, date };
+    return { ...result, messageId, date } as any;
 }
 
-function getOrderSignalInfoFull(signal, groupedSignals) {
+export function getOrderSignalInfoFull(signal: Message, groupedSignals: { [key: string]: Message[] }): Partial<OrderDetail> {
     const relatedSignals = groupedSignals[signal.messageId];
 
-    const order = relatedSignals.find(x => x.type == 'order' || x.type == 'spotOrder'); //  relatedSignals.find(x => x.type == 'order' && x.exchange == 'Binance Futures');
-    const entries = relatedSignals.filter(x => x.type === 'entry'); // relatedSignals.filter(x => x.type === 'entry' && x.exchange == 'Binance Futures');
-    const tps = relatedSignals.filter(x => x.type == 'TP');
-    const sl = relatedSignals.filter(x => x.type == 'SL');
+    const order = relatedSignals.find(x => x.type == 'order' || x.type == 'spotOrder') as Order; //  relatedSignals.find(x => x.type == 'order' && x.exchange == 'Binance Futures');
+    const entries = relatedSignals.filter(x => x.type === 'entry') as Entry[]; // relatedSignals.filter(x => x.type === 'entry' && x.exchange == 'Binance Futures');
+    const tps = relatedSignals.filter(x => x.type == 'TP') as TakeProfit[];
+    const sl = relatedSignals.filter(x => x.type == 'SL') as StopLoss[];
     const other = relatedSignals.filter(x => x.type !== 'spotOrder' && x.type !== 'order' && x.type !== 'entry' && x.type !== 'TP' && x.type !== 'SL');
 
     if (order == null) {
@@ -455,7 +496,7 @@ function getOrderSignalInfoFull(signal, groupedSignals) {
     return data;
 }
 
-function updateOrderDetailWithSL(orderDetail, sl) {
+export function updateOrderDetailWithSL(orderDetail: OrderDetail, sl: StopLoss) {
     orderDetail.sl.push(sl);
 
     // it doesn't make any sense to reach full SL without reaching all entry points first, assume all entries were entered
@@ -474,10 +515,12 @@ function updateOrderDetailWithSL(orderDetail, sl) {
     orderDetail.closed = true;
 }
 
-function groupRelatedSignals(signals) {
-    const mappedSignals = signals.reduce((acc, x) => { acc[x.messageId] = [ x ]; return acc; }, {});
+type GroupedSignals = {[key: string]: Message[] };
 
-    signals.filter(x => x.relatedTo != null).forEach(x => {
+export function groupRelatedSignals(signals: Message[]) {
+    const mappedSignals = signals.reduce((acc: GroupedSignals, x) => { acc[x.messageId] = [ x ]; return acc; }, {});
+
+    signals.filter((x: any) => x.relatedTo != null).forEach((x: any) => {
         const oldValues = mappedSignals.hasOwnProperty(x.relatedTo) ? mappedSignals[x.relatedTo] : [];
         mappedSignals[x.relatedTo] = [ ...oldValues, x ];
     });
@@ -485,22 +528,22 @@ function groupRelatedSignals(signals) {
     return mappedSignals;
 }
 
-function getRootSignals(groupedSignals) {
+export function getRootSignals(groupedSignals: GroupedSignals) {
     const uniqueSignals = Object.keys(groupedSignals).map(x => groupedSignals[x][0]);
-    const rootSignalIds = new Set(uniqueSignals.filter(x => x.relatedTo == null).map(x => x.messageId));
+    const rootSignalIds = new Set(uniqueSignals.filter((x: any) => x.relatedTo == null).map(x => x.messageId));
     const rootSignals = Array.from(rootSignalIds).map(x => groupedSignals[x]).filter(x => x != null).map(x => x[0]);
 
     return rootSignals;
 }
 
-function getOrderSignals(groupedSignals) {
-    return groupedSignals.filter(x => x.type == 'order' || x.type == 'spotOrder');
+export function getOrderSignals(signals: Message[]): Order[] {
+    return signals.filter(x => x.type == 'order' || x.type == 'spotOrder') as Order[];
 }
 
-function mapSLToOrder(slSignal, orderSignals, groupedSignals, allSignals) {
+export function mapSLToOrder(slSignal: StopLoss, orderSignals: OrderDetail[], groupedSignals: GroupedSignals, allSignals: Message[]) {
     console.log(slSignal);
 
-    const originallyMappedOrder = groupedSignals[slSignal.relatedTo]?.[0];
+    const originallyMappedOrder = groupedSignals[slSignal.relatedTo!]?.[0] as Order;
 
     if (originallyMappedOrder == null) {
         // this is tricky, but probably rare, skip for now and check the impact later
@@ -508,12 +551,12 @@ function mapSLToOrder(slSignal, orderSignals, groupedSignals, allSignals) {
         const timeDiffMax2MinInMs = 2 * 60 * 1000;
         const ordersWithTheSameCoin = orderSignals.filter(x => x.order.coin === originallyMappedOrder.coin);
         const probablyRelatedOrders = orderSignals.filter(x => x.order.coin === originallyMappedOrder.coin &&
-            (x.order.date - originallyMappedOrder.date) <= timeDiffMax2MinInMs && x.order.stopLoss === originallyMappedOrder.stopLoss)
+            ((x.order.date as any) - (originallyMappedOrder.date as any)) <= timeDiffMax2MinInMs && x.order.stopLoss === originallyMappedOrder.stopLoss)
             .filter(x => x.order.messageId !== originallyMappedOrder.messageId);
 
         probablyRelatedOrders.forEach((x, index) => {
             const slCopy =  { ...slSignal, relatedTo: x.order.messageId, messageId: `${slSignal.messageId}-${index + 1}`, exchange: x.order.exchange };
-            groupedSignals[slCopy.messageId] = slCopy;
+            groupedSignals[slCopy.messageId] = [ slCopy ];
             groupedSignals[x.order.messageId].push(slCopy);
 
             updateOrderDetailWithSL(x, slCopy);
@@ -523,34 +566,46 @@ function mapSLToOrder(slSignal, orderSignals, groupedSignals, allSignals) {
     }
 }
 
-let messages = $$('.message.default').map(x => parseMessage(x));
+export function getAllMessages(): Message[] {
+    const $$ = (selector: string) => Array.from(document.querySelectorAll(selector)) as HTMLElement[];
+    const messages = $$('.message.default').map(x => parseMessage(x));
 
-const savedMessages = localStorage.getItem('bk2') ?? '[]';
-const parsedSavedMessages = JSON.parse(savedMessages);
-const allMessages = [ ...parsedSavedMessages, ...messages ].sort((x, y) => x.date = y.date);
-localStorage.setItem('bk2', JSON.stringify(allMessages));
+    return messages;
+}
 
-const messagesWithFixedDate = allMessages.map(x => {
-    if (typeof x.date === 'string') {
-        return { ...x, date: new Date(x.date) };
-    }
+export function parseInBrowser() {
+    const $$ = (selector: string) => Array.from(document.querySelectorAll(selector)) as HTMLElement[];
+    const messages = $$('.message.default').map(x => parseMessage(x));
+    const savedMessages = localStorage.getItem('bk2') ?? '[]';
+    const parsedSavedMessages = JSON.parse(savedMessages);
+    const allMessages = [ ...parsedSavedMessages, ...messages ].sort((x, y) => x.date = y.date);
+    localStorage.setItem('bk2', JSON.stringify(allMessages));
 
-    return x;
-});
-const groupedSignals = groupRelatedSignals(messagesWithFixedDate);
-const orderSignals = getOrderSignals(messagesWithFixedDate).map(x => getOrderSignalInfoFull(x, groupedSignals));
+    const messagesWithFixedDate = allMessages.map(x => {
+        if (typeof x.date === 'string') {
+            return { ...x, date: new Date(x.date) };
+        }
 
-const slSignals = messagesWithFixedDate.filter(x => x.type == 'SL');
-slSignals.forEach(x => mapSLToOrder(x, orderSignals, groupedSignals, messagesWithFixedDate));
+        return x;
+    });
+    const groupedSignals = groupRelatedSignals(messagesWithFixedDate);
+    const orderSignals = getOrderSignals(messagesWithFixedDate).map(x => getOrderSignalInfoFull(x, groupedSignals)) as OrderDetail[];
 
-const binanceFuturesSignals = orderSignals.filter(x => x.order?.exchange == "Binance Futures");
+    const slSignals = messagesWithFixedDate.filter(x => x.type == 'SL');
+    slSignals.forEach(x => mapSLToOrder(x, orderSignals, groupedSignals, messagesWithFixedDate));
 
-const binanceFuturesProfitable = binanceFuturesSignals.filter(x => x.tps.length > 1);
+    const binanceFuturesSignals = orderSignals.filter(x => x.order?.exchange == "Binance Futures");
 
-const sumTpPcts = binanceFuturesProfitable.reduce((sum, x) => sum + x.tps[x.tps.length - 1].pct, 0);
-const avgTpPcts =  sumTpPcts / binanceFuturesProfitable.length;
+    const binanceFuturesProfitable = binanceFuturesSignals.filter(x => x.tps.length > 1);
 
-const binanceFuturesSL = binanceFuturesSignals.filter(x => x.sl.length > 1);
+    const sumTpPcts = binanceFuturesProfitable.reduce((sum, x) => sum + x.tps[x.tps.length - 1].pct, 0);
+    const avgTpPcts =  sumTpPcts / binanceFuturesProfitable.length;
+
+    const binanceFuturesSL = binanceFuturesSignals.filter(x => x.sl.length > 1);
+
+    let interestingData = orderSignals.filter(x => x.order.exchange?.toLowerCase() === 'Binance Futures'.toLowerCase()); //.map(x => getSignalInfoFull(x));
+    Object.keys(groupedSignals).map(x => groupedSignals[x]).filter(x => x.length == 1).map(x => x[0]).filter(x => x.type == 'TP' && x.exchange.match('Binance'))
+}
 
 // filter(x => x.type == 'entry')
 // const mappedSignals = data.reduce((acc, x) => { acc[x.messageId] = [ x ]; return acc; }, {});
@@ -566,8 +621,6 @@ const binanceFuturesSL = binanceFuturesSignals.filter(x => x.sl.length > 1);
 
 
 
-let interestingData = orderSignals.filter(x => x.order.exchange?.toLowerCase() === 'Binance Futures'.toLowerCase()); //.map(x => getSignalInfoFull(x));
-Object.keys(groupedSignals).map(x => groupedSignals[x]).filter(x => x.length == 1).map(x => x[0]).filter(x => x.type == 'TP' && x.exchange.match('Binance'))
 
 
 /**
