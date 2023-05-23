@@ -489,20 +489,20 @@ export function getOrderSignalInfoFull(signal: Message, groupedSignals: { [key: 
         };
     }
 
-    const avgEntryPrice = entries.map(x => x.price).reduce((sum, entry) => entry + sum, 0) / entries.length;
+    const avgEntryPrice = entries.map(x => x.price).reduce((sum, entry) => entry + sum, 0) / Math.max(entries.length, 1);
 
-    const maxReachedEntry = Math.max(...entries.map(x => x.entry));
+    const maxReachedEntry = Math.max(...entries.map(x => x.entry).concat([0]));
     const tpsAsInt = tps.map(x => x.tp);
-    const maxReachedTp = Math.max(...tpsAsInt);
+    const maxReachedTp = Math.max(...tpsAsInt.concat([0]));
 
     const lev = order.leverage ?? 1;
 
     const orderTps = order.targets.map(x => x);
     const avgTpValue = orderTps.filter((x, idx) => idx + 1 <= maxReachedTp)
-        .reduce((sum, x) => sum + x, 0) / maxReachedTp;
+        .reduce((sum, x) => sum + x, 0) / Math.max(maxReachedTp, 1);
 
     const sumProfitPct = orderTps.filter((x, idx) => idx + 1 <= maxReachedTp)
-        .reduce((sum, x) => sum + Math.abs(x - avgEntryPrice), 0) / maxReachedTp / avgEntryPrice * lev * 100;
+        .reduce((sum, x) => sum + Math.abs(x - avgEntryPrice), 0) / Math.max(maxReachedTp, 1) / avgEntryPrice * lev * 100;
 
     const sumLossPct = Math.abs(order.stopLoss - avgEntryPrice) / avgEntryPrice * lev * 100;
 
@@ -528,6 +528,33 @@ export function getOrderSignalInfoFull(signal: Message, groupedSignals: { [key: 
     };
 
     return data;
+}
+
+export function getOrderKey(order: OrderDetail) {
+    return [
+        order.order.coin,
+        order.order.direction,
+        order.order.stopLoss
+    ].join(':');
+}
+
+export type OrderGrouping = { order: OrderDetail, key: string };
+
+export function groupRelatedOrders(orders: OrderDetail[]): {[key: string]: OrderGrouping[]} {
+    const orderId = 0;
+
+    const ordersWithKey = orders.map(x => ({ order: x, key: getOrderKey(x) }));
+    ordersWithKey.sort((x, y) => x.key.localeCompare(y.key));
+
+    return ordersWithKey.reduce((acc: any, x) => {
+        if (!Object.hasOwn(acc, x.key)) {
+            acc[x.key] = [];
+        }
+
+        acc[x.key].push(x);
+
+        return acc;
+    }, {});
 }
 
 export function updateOrderDetailWithSL(orderDetail: OrderDetail, sl: StopLoss) {

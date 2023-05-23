@@ -1,4 +1,4 @@
-import { Message, OrderDetail, StopLoss, getAllMessages, getOrderSignalInfoFull, getOrderSignals, groupRelatedSignals, mapSLToOrder, parseMessage } from "./parse-bk-cornix.ts";
+import { Message, OrderDetail, StopLoss, getAllMessages, getOrderKey, getOrderSignalInfoFull, getOrderSignals, groupRelatedOrders, groupRelatedSignals, mapSLToOrder, parseMessage } from "./parse-bk-cornix.ts";
 // import { JSDOM } from "jsdom";
 import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 
@@ -75,3 +75,84 @@ console.log(binanceFuturesSL.length);
 
 const signalsWithoutTpAndSl = orderSignals.filter(x => x.sl.length == 0 && x.tps.length == 0 && x.entries.length == 0);
 console.log({ signalsWithoutTpAndSl: signalsWithoutTpAndSl.length });
+
+const coins = new Set(orderSignals.map(x => x.order.coin));
+
+const coinsAndCountOrders = orderSignals.reduce((acc: Map<string, number>, x) => {
+  const count = acc.has(x.order.coin) ? acc.get(x.order.coin)! : 0;
+  acc.set(x.order.coin, count + 1);
+
+  return acc;
+}, new Map());
+
+console.log(coinsAndCountOrders);
+
+
+const recentOrders = orderSignals.filter(x => x.order.date >= new Date(2022, 0, 1));
+const groupedOrders = groupRelatedOrders(recentOrders);
+
+const recentOrdersWithoutTpAndSl = recentOrders.filter(x => x.sl.length == 0 && x.tps.length == 0 && x.entries.length == 0);
+
+recentOrdersWithoutTpAndSl.forEach(order => {
+  const key = getOrderKey(order);
+  const relatedOrders = groupedOrders[key];
+
+  const anyRelatedOrderHasTp = relatedOrders.filter(x => x.order.maxReachedTp > 0);
+
+  if (anyRelatedOrderHasTp.length > 0) {
+
+  }
+
+});
+
+console.log(Object.keys(groupedOrders).length);
+
+const maxStats = recentOrders.reduce((stats: any, x) => {
+  return {
+    maxCountTP: Math.max(stats.maxCountTP, x.order.targets.length),
+    maxCountEntry: Math.max(stats.maxCountEntry, x.order.entry.length)
+  };
+}, {
+  maxCountTP: 0,
+  maxCountEntry: 0
+});
+
+const csvHeader = [
+  'date',
+  'coin',
+  'exchange',
+  'leverage',
+  'avgEntryPrice',
+  'avgTpValue',
+  'maxReachedEntry',
+  'maxReachedTp',
+  'pnl',
+  'status',
+  [...Array(maxStats.maxCountEntry).keys()].map((x, idx) => `EP${idx + 1}`),
+  [...Array(maxStats.maxCountTP).keys()].map((x, idx) => `TP${idx + 1}`),
+  'stopLoss'
+];
+
+const csvRows = Object.keys(groupedOrders).flatMap(x => groupedOrders[x]).map(x => {
+  const order = x.order.order;
+
+  return [
+    order.date.toISOString(),
+    order.coin,
+    order.exchange,
+    order.leverage,
+    x.order.avgEntryPrice,
+    x.order.avgTpValue,
+    x.order.maxReachedEntry,
+    x.order.maxReachedTp,
+    x.order.pnl,
+    x.order.closed ? 'closed' : 'open',
+    ...order.entry.concat([...Array(maxStats.maxCountEntry - order.entry.length).map(_ => 0)]),
+    ...order.targets.concat([...Array(maxStats.maxCountTP - order.targets.length).map(_ => 0)]),
+    order.stopLoss,
+  ];
+});
+
+const data = [ csvHeader, ...csvRows ].map(row => row.join(',')).join('\n');
+
+await Deno.writeTextFileSync('results.csv', data);
