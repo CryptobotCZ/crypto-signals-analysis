@@ -16,7 +16,6 @@ export interface Order extends GenericMessage {
     targets: number[];
     shortTermTargets?: number[];
     midTermTargets?: number[];
-
     stopLoss: number;
 }
 
@@ -34,7 +33,11 @@ export interface UnknownMessage extends GenericMessage { type: 'unknown', text: 
 
 export type Message = Order | Entry | EntryAll | Close | Cancel | Opposite | SLAfterTP | StopLoss | TakeProfit | TakeProfitAll | UnknownMessage;
 
-export interface OrderDetail { order: Order; entries: Entry[]; tps: TakeProfit[]; sl: StopLoss[]; other: Message[]; maxReachedEntry: number; maxReachedTp: number; avgEntryPrice: number; avgTpValue: number; pnl: number; closed: boolean; lev: number; }
+export interface OrderDetail {
+    order: Order; entries: Entry[]; tps: TakeProfit[]; sl: StopLoss[]; other: Message[]; maxReachedEntry: number; maxReachedTp: number;
+    avgEntryPrice: number; avgTpValue: number;
+    pnl: number;
+    closed: boolean; lev: number; }
 
 export function parseDate(dateString: string) {
     const parts = dateString.split(" ");
@@ -489,6 +492,12 @@ export function getOrderSignalInfoFull(signal: Message, groupedSignals: { [key: 
         };
     }
 
+    if (order.direction === 'LONG') {
+        order.entry.sort((a,b) => b - a);
+    } else {
+        order.entry.sort((a,b) => a - b);
+    }
+
     const avgEntryPrice = entries.map(x => x.price).reduce((sum, entry) => entry + sum, 0) / Math.max(entries.length, 1);
 
     const maxReachedEntry = Math.max(...entries.map(x => x.entry).concat([0]));
@@ -625,6 +634,23 @@ export function mapSLToOrder(slSignal: StopLoss, orderSignals: OrderDetail[], gr
             allSignals.push(slCopy);
         });
     }
+}
+
+export function getTPPotentialProfit(orderDetail: OrderDetail): number[] {
+    return orderDetail.order.targets.map((tpTarget: number) => {
+        const entryPrice = orderDetail.order.entry[0];
+        const lev = orderDetail.order.leverage ?? 1;
+
+        return Math.abs(tpTarget - entryPrice) / entryPrice * lev * 100;
+    });
+}
+
+export function getPotentialLoss(orderDetail: OrderDetail): number {
+    const entryPrice = orderDetail.order.entry[0];
+    const lev = orderDetail.order.leverage ?? 1;
+    const sl = orderDetail.order.stopLoss;
+
+    return Math.abs(entryPrice - sl) / entryPrice * lev * 100 * -1;
 }
 
 export function getAllMessages(): Message[] {
