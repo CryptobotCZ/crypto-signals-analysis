@@ -1,9 +1,11 @@
-import { Message, OrderDetail, StopLoss, getAllMessages, getOrderKey, getOrderSignalInfoFull, getOrderSignals,
-  getPotentialLoss, getTPPotentialProfit, groupRelatedOrders, groupRelatedSignals, mapSLToOrder, parseMessage, updateOrderDetailWithSL } from "./parse-bk-cornix.ts";
-import { getAllMessages as getAltSignalsMessages, Entry as AltEntry } from "./src/altsignals.ts";
+import { getAllMessages as getAltSignalsMessages} from "./src/altsignals.ts";
+import { getAllMessages as getBKChannelMessages} from "./src/binance-killers-channel.ts";
 
   // import { JSDOM } from "jsdom";
 import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
+import { Entry, Message, Order, OrderDetail, StopLoss, getOrderKey, getOrderSignalInfoFull,
+   getOrderSignals, getPotentialLoss, getTPPotentialProfit, groupRelatedOrders, groupRelatedSignals,
+   mapSLToOrder, updateOrderDetailWithSL } from "./src/parser.ts";
 
 // Learn more at https://deno.land/manual/examples/module_metadata#concepts
 if (import.meta.main) {
@@ -55,7 +57,7 @@ async function parseAltSignals() {
 
   messages.sort((a,b) => (a.date as any) - (b.date as any));
 
-  const entryMessages = messages.filter(x => x.type == 'entry') as AltEntry[]; // || x.type == 'entryAll');
+  const entryMessages = messages.filter(x => x.type == 'entry') as Entry[]; // || x.type == 'entryAll');
 
   const averages = entryMessages.reduce((sum: any, x) => {
     if (!Object.hasOwn(sum, x.entry)) {
@@ -90,7 +92,73 @@ async function parseAltSignals() {
   console.log(entryMessages);
 }
 
-await parseAltSignals();
+async function parseBKGroup() {
+  const dir = './data/binance-killers-vip-history-2023-05-28';
+  const messages = await parseAll(dir, getBKChannelMessages);
+
+  messages.sort((a,b) => (a.date as any) - (b.date as any));
+
+  const orders = messages.filter(x => x.type == 'order') as Order[];
+
+  const maxStats = orders.reduce((stats: any, x) => {
+    return {
+      maxCountTP: Math.max(stats.maxCountTP, x.targets.length),
+      maxCountEntry: Math.max(stats.maxCountEntry, x.entry.length)
+    };
+  }, {
+    maxCountTP: 0,
+    maxCountEntry: 0
+  });
+
+  const csvHeader = [
+    'signalId',
+    'date',
+    'coin',
+    'direction',
+    'leverage',
+    ...[...Array(maxStats.maxCountEntry).keys()].map((x, idx) => `EP${idx + 1}`),
+    ...[...Array(maxStats.maxCountTP).keys()].map((x, idx) => `TP${idx + 1}`),
+    'stopLoss',
+//    ...[...Array(maxStats.maxCountTP).keys()].map((x, idx) => `TP Pot. Profit ${idx + 1}`),
+//    'potentialLoss'
+  ];
+
+  const options = {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  };
+
+  const csvRows = orders.map(x => {
+    const order = x;
+
+    return [
+     (order as any).signalId,
+      order.date.toLocaleDateString('cs-CZ', options as any),
+      order.coin,
+      order.direction,
+      order.leverage,
+      ...order.entry.concat([...Array(maxStats.maxCountEntry - order.entry.length).map(_ => 0)]),
+      ...order.targets.concat([...Array(maxStats.maxCountTP - order.targets.length).map(_ => 0)]),
+      order.stopLoss
+    ].map((x, idx) => {
+      if (idx > 0)
+        return x?.toString()//?.replace('.', ',');
+      return x;
+    });
+  });
+
+  const separator = ',';
+  const data = [ csvHeader, ...csvRows ].map(row => row.join(separator)).join('\n');
+
+  await Deno.writeTextFileSync('bk-group-signal-ids.csv', data);
+}
+
+// await parseAltSignals();
+await parseBKGroup();
 
 Deno.exit();
 

@@ -91,6 +91,11 @@ export function getReferencedMessageId(messageDiv: HTMLElement) {
     return null;
 }
 
+export function parseOrder(messageDiv: HTMLElement, pattern: RegExp): Partial<Order> | null {
+    const text = messageDiv.innerText ?? '';
+    return parseOrderText(text, pattern);
+}
+
 /**
  *
  * @param messageDiv
@@ -103,8 +108,7 @@ export function getReferencedMessageId(messageDiv: HTMLElement) {
  *  6 - targets
  * @returns
  */
-export function parseOrder(messageDiv: HTMLElement, pattern: RegExp): Partial<Order> | null {
-    const message = messageDiv.innerText ?? '';
+export function parseOrderText(message: string, pattern: RegExp): Partial<Order> | null {
     const match = pattern.exec(message.trim());
 
     if (match) {
