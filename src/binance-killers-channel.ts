@@ -1,6 +1,4 @@
 import {
-    parseOrder as baseParseOrder,
-    parseOrderText as baseParseOrderText,
     parseSpotOrder as baseParseSpotOrder,
     parseEntry as baseParseEntry,
     parseEntryAll as baseParseEntryAll,
@@ -41,7 +39,6 @@ export function parseOrderText(message: string): Partial<Order> | null {
         return null;
     }
 
-//    const pattern = /SIGNAL ID: #(\d+).* COIN: \$?(.+) (\(.*\))\n?Direction: (.+)\n.*ENTRY: (.+)\nOTE: (.+)\n\nTARGETS\nShort Term: (.+)\nMid Term: (.+)\n\nSTOP LOSS: (.+)/g;
     const pattern = /SIGNAL ID: #(\d+).*\nCOIN: \$?(.+) (\(.*\))\n?Direction: (\w+).*ENTRY: (.+)\nOTE: (.+)\n\nTARGETS\nShort Term: (.+)\nMid Term: (.+)\n\nSTOP LOSS: ([\d\.]+)\n/gs
     const match = pattern.exec(message);
 
@@ -80,20 +77,11 @@ export function parseOrderText(message: string): Partial<Order> | null {
 }
 
 export function parseOrderText2(message: string) {
-    //    const pattern = /SIGNAL ID: #?(\d+).* ?COIN: \$?(.+) (\(.*\)).*ENTRY: (.+)\n?OTE: (.+)\n?TARGETS\n?Short Term: (.+)Mid Term: (.+)\n?STOP LOSS: \w+ ?([\d.]+)/;
         const pattern = /SIGNAL ID: #(\d+).*COIN: \$?(.+) (\(.*\))\n?Direction: (\w+).*ENTRY: (.+)\n?OTE: ([\d\.\,]+).*TARGETS\n?Short Term: (.+)\n?Mid Term: (.+)STOP LOSS: ([\d\.\,]+)/s;
-//        const pattern = /SIGNAL ID: #?(\d+).* ?COIN: \$?(.+) (\(.*\)).*ENTRY: (.+)\n?OTE: (.+)\n*TARGETS.*Short Term: (.+)\n*Mid Term: (.+)\n?STOP LOSS: \w+ ?([\d.]+)/gms;
         const match = pattern.exec(message);
 
         if (!match) {
             return parseOrderText3(message);
-
-            const signalPattern = /SIGNAL ID: #?(\d+)./
-            const signalMatch = signalPattern.exec(message);
-            return null;
-
-            return signalMatch ? { type: 'unknown', message: message, signalId: signalMatch[1] } : null;
-    //        return null;
         }
 
         const signalId = match[1];
