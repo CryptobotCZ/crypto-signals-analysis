@@ -1,3 +1,6 @@
+import yargs from 'https://deno.land/x/yargs/deno.ts'
+import { Arguments } from 'https://deno.land/x/yargs/deno-types.ts'
+
 import { getAllMessages as getAltSignalsMessages} from "./src/altsignals.ts";
 import { getAllMessages as getBKChannelMessages} from "./src/binance-killers-channel.ts";
 
@@ -6,11 +9,40 @@ import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts
 import { Entry, Message, Order, OrderDetail, StopLoss, getOrderKey, getOrderSignalInfoFull,
    getOrderSignals, getPotentialLoss, getTPPotentialProfit, groupRelatedOrders, groupRelatedSignals,
    mapSLToOrder, updateOrderDetailWithSL } from "./src/parser.ts";
+import { up } from './src/migrations/01-create-db.ts';
+import { db } from "./src/database.ts";
 
 // Learn more at https://deno.land/manual/examples/module_metadata#concepts
 if (import.meta.main) {
 
 }
+
+yargs(Deno.args)
+  .command('download <files...>', 'download a list of files', (yargs: any) => {
+    return yargs.positional('files', {
+      describe: 'a list of files to do something with'
+    })
+  }, (argv: Arguments) => {
+    console.info(argv)
+  })
+  .command('init', 'initialize database', (yargs: any) => {}, async (argv: Arguments) => {
+    await up(db);
+  })
+  .command('verify', 'verify database', (yargs: any) => {}, (argv: Arguments) => {
+      const query = db.prepareQuery('SELECT * FROM db_version');
+      const result = query.all();
+      query.finalize();
+
+      console.log(result);
+      const version = result[result.length - 1]['version' as any];
+
+      console.info(`Current DB version: ${version}`)
+  })
+  .strictCommands()
+  .demandCommand(1)
+  .version('version', '0.0.1').alias('version', 'V')
+  .argv;
+Deno.exit();
 
 async function parseFile<T>(path: string, parser: () => T[]) {
   const fileContent = await Deno.readTextFile(path);
