@@ -29,6 +29,7 @@ export async function up(db: DB) {
             stoploss REAL,
             pnl REAL,
             max_loss REAL,
+            max_profit REAL,
             max_reached_entry INTEGER,
             max_reached_tp INTEGER,
             exchange VARCHAR(255),
@@ -89,7 +90,7 @@ export async function up(db: DB) {
             signal_id INTEGER,
             date TEXT,
             text TEXT,
-            signal_value  TEXT,
+            type  TEXT,
             FOREIGN KEY(signal_id) REFERENCES signals(id)
         )
     `);

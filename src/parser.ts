@@ -6,6 +6,7 @@ export interface GenericMessage {
 }
 
 export interface Order extends GenericMessage {
+    signalId?: string;
     type: 'order' | 'spotOrder';
     coin: string;
     direction: string;
@@ -517,7 +518,7 @@ export function updateOrderDetailWithSL(orderDetail: OrderDetail, sl: StopLoss) 
 
     // it doesn't make any sense to reach full SL without reaching all entry points first, assume all entries were entered
     const entries = orderDetail.order.entry;
-    const avgEntryPrice = entries.reduce((sum, entry) => entry + sum, 0) / entries.length;
+    const avgEntryPrice = entries.reduce((sum: any, entry: any) => entry + sum, 0) / entries.length;
     const maxReachedEntry = entries.length;
     const lev = orderDetail.order.leverage ?? 1;
 
@@ -596,6 +597,10 @@ export function getPotentialLoss(orderDetail: OrderDetail): number {
     const sl = orderDetail.order.stopLoss;
 
     return Math.abs(entryPrice - sl) / entryPrice * lev * 100 * -1;
+}
+
+export function getMaxPotentialProfit(orderDetail: OrderDetail): number {
+    return getTPPotentialProfit(orderDetail)[orderDetail.order.targets.length];
 }
 
 export function parseMessagePipeline(messageDiv: HTMLElement, pipeline: PartialParser[]): Message {

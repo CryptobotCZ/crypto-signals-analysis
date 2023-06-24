@@ -13,3 +13,119 @@ export async function down(schema: Schema) {
 }
 
 export const db = new DB("test.db");
+
+
+export interface DbSignal {
+  id?: number;
+  channel_id: number;
+  date: string;
+  signal_id: string | null;
+  coin: string;
+  direction: string;
+  leverage: number;
+  leverage_type: string | null;
+  stoploss: number;
+  exchange: string;
+  status: string;
+  pnl: number;
+  max_loss: number;
+  max_profit: number;
+  max_reached_entry: number;
+  max_reached_tp: number;
+}
+
+export function createSignal(db: DB, signal: DbSignal) {
+  const cmd = db.prepareQuery<any, any, any>(`INSERT INTO signals(channel_id, date, signal_id, coin, direction, leverage, leverage_type, stoploss, exchange, status, pnl, max_loss, max_profit, max_reached_entry, max_reached_tp)
+    VALUES (:channel_id, :date, :signal_id, :coin, :direction, :leverage, :leverage_type, :stoploss, :exchange, :status, :pnl, :max_loss, :max_profit, :max_reached_entry, :max_reached_tp)`);
+
+    cmd.execute(signal);
+    cmd.finalize();
+
+    return db.lastInsertRowId;
+}
+
+export interface DbSignalConfigEntry {
+  id?: number;
+  signal_id: number;
+  name: string;
+  percentage: number | null;
+  value: number;
+}
+
+export function createSignalConfigEntry(db: DB, entry: DbSignalConfigEntry) {
+  const cmd = db.prepareQuery<any, any, any>(`INSERT INTO signal_config_entries(signal_id, name, percentage, value)
+    VALUES (:signal_id, :name, :percentage, :value)`);
+
+    cmd.execute(entry);
+    cmd.finalize();
+
+    return db.lastInsertRowId;
+}
+
+export interface DbSignalConfigTp extends DbSignalConfigEntry {
+}
+
+
+export function createSignalConfigTp(db: DB, entry: DbSignalConfigTp) {
+  const cmd = db.prepareQuery<any, any, any>(`INSERT INTO signal_config_tps(signal_id, name, percentage, value)
+    VALUES (:signal_id, :name, :percentage, :value)`);
+
+    cmd.execute(entry);
+    cmd.finalize();
+
+    return db.lastInsertRowId;
+}
+
+export interface DbSignalReachedEntry extends DbSignalConfigEntry {
+  date: Date
+  entry_id: number;
+}
+
+export function createSignalReachedEntry(db: DB, entry: Partial<DbSignalReachedEntry>) {
+  const cmd = db.prepareQuery<any, any, any>(`INSERT INTO signal_reached_entry(signal_id, entry_id, value, date)
+    VALUES (:signal_id, :entry_id, :value, :date)`);
+
+    cmd.execute(entry);
+    cmd.finalize();
+
+    return db.lastInsertRowId;
+}
+
+export interface DbSignalReachedTp extends DbSignalConfigTp {
+  date: Date
+}
+
+export function createSignalReachedTp(db: DB, entry: DbSignalReachedTp) {
+  const cmd = db.prepareQuery<any, any, any>(`INSERT INTO signal_reached_tp(signal_id, tp_id, value, date)
+    VALUES (:signal_id, :tp_id, :value, :date)`);
+
+    cmd.execute(entry);
+    cmd.finalize();
+
+    return db.lastInsertRowId;
+}
+
+export interface DbRawSignal {
+  date: Date;
+  signalId: string;
+  type: string;
+  text: string;
+}
+
+export function createRawSignal(db: DB, entry: DbSignalConfigTp) {
+  const cmd = db.prepareQuery<any, any, any>(`INSERT INTO raw_signal(signal_id, date, text, type)
+                                              VALUES (:signal_id, :date, :text, :type)`);
+
+  cmd.execute(entry);
+  cmd.finalize();
+
+  return db.lastInsertRowId;
+}
+
+export function getChannelIdByName(db: DB, name: string): number {
+  const query = db.prepareQuery(`SELECT * FROM channels WHERE name LIKE :name `);
+  const result = query.all({ name: `%${name}%` });
+  query.finalize();
+
+  return (result?.[0]?.[0] as any) ?? 0;
+}
