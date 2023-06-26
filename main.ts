@@ -11,6 +11,18 @@ if (import.meta.main) {
 
 }
 
+const signals = [
+  'altsignals', 'bitsturtle', 'bk-cornix', 'bk-group'
+];
+
+const addSignalsArgs = (yargs: any) => {
+  yargs.positional('signals', {
+    describe: 'signal group to parse',
+    type: 'string'
+  });
+  yargs.choices('signals', signals);
+};
+
 yargs(Deno.args)
   .command('download <files...>', 'download a list of files', (yargs: any) => {
     return yargs.positional('files', {
@@ -37,11 +49,7 @@ yargs(Deno.args)
       describe: 'path to directory with signals to parse',
       type: 'string'
     });
-    yargs.positional('signals', {
-      describe: 'signal group to parse',
-      type: 'string'
-    });
-    yargs.choices('signals', ['bk-cornix', 'bk-chat', 'altsignals']);
+    addSignalsArgs(yargs);
   }, async (argv: Arguments) => {
       await parse(argv.directory, argv.signals);
   })
@@ -50,20 +58,12 @@ yargs(Deno.args)
       describe: 'path to directory with signals to parse',
       type: 'string'
     });
-    yargs.positional('signals', {
-      describe: 'signal group to parse',
-      type: 'string'
-    });
-    yargs.choices('signals', ['bk-cornix', 'bk-chat', 'altsignals']);
+    addSignalsArgs(yargs);
   }, async (argv: Arguments) => {
       await importData(argv.directory, argv.signals);
   })
   .command('export <signals> <file>', 'export signals', (yargs: any) => {
-    yargs.positional('signals', {
-      describe: 'signal group to parse',
-      type: 'string'
-    });
-    yargs.choices('signals', ['bk-cornix', 'bk-chat', 'altsignals']);
+    addSignalsArgs(yargs);
   }, (argv: Arguments) => {
 
   })

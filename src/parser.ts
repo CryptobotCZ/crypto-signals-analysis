@@ -17,7 +17,7 @@ export interface Order extends GenericMessage {
     targets: number[];
     shortTermTargets?: number[];
     midTermTargets?: number[];
-    stopLoss: number;
+    stopLoss: number | null;
 }
 
 export interface Entry extends GenericMessage {  type: 'entry'; coin: string; exchange: string; entry: number; price: number; }
@@ -494,7 +494,6 @@ export function getOrderKey(order: OrderDetail) {
         order.order.stopLoss
     ].join(':');
 }
-
 
 export function groupRelatedOrders(orders: OrderDetail[]): {[key: string]: OrderGrouping[]} {
     const orderId = 0;

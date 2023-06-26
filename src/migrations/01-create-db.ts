@@ -20,7 +20,7 @@ export async function up(db: DB) {
         CREATE TABLE IF NOT EXISTS signals (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             channel_id INTEGER,
-            date TEXT,
+            timestamp INTEGER,
             signal_id VARCHAR(255),
             coin VARCHAR(255),
             direction VARCHAR(255),
@@ -34,6 +34,7 @@ export async function up(db: DB) {
             max_reached_tp INTEGER,
             exchange VARCHAR(255),
             status VARCHAR(255),
+            date varchar(255) generated always as (DATETIME(timestamp, 'unixepoch')) virtual,
             FOREIGN KEY(channel_id) REFERENCES channels(id)
         )
     `);
@@ -66,7 +67,8 @@ export async function up(db: DB) {
             signal_id INTEGER,
             entry_id INTEGER,
             value REAL,
-            date TEXT,
+            timestamp INTEGER,
+            date varchar(255) generated always as (DATETIME(timestamp, 'unixepoch')) virtual,
             FOREIGN KEY(signal_id) REFERENCES signals(id),
             FOREIGN KEY(entry_id) REFERENCES signal_config_entries(id)
         )
@@ -78,7 +80,8 @@ export async function up(db: DB) {
             signal_id INTEGER,
             tp_id INTEGER,
             value REAL,
-            date TEXT,
+            timestamp INTEGER,
+            date varchar(255) generated always as (DATETIME(timestamp, 'unixepoch')) virtual,
             FOREIGN KEY(signal_id) REFERENCES signals(id),
             FOREIGN KEY(tp_id) REFERENCES signal_config_tps(id)
         )
@@ -88,7 +91,8 @@ export async function up(db: DB) {
         CREATE TABLE raw_signal (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             signal_id INTEGER,
-            date TEXT,
+            timestamp INTEGER,
+            date varchar(255) generated always as (DATETIME(timestamp, 'unixepoch')) virtual,
             text TEXT,
             type  TEXT,
             FOREIGN KEY(signal_id) REFERENCES signals(id)

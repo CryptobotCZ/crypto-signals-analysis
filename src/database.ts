@@ -18,13 +18,13 @@ export const db = new DB("test.db");
 export interface DbSignal {
   id?: number;
   channel_id: number;
-  date: string;
+  date: Date;
   signal_id: string | null;
   coin: string;
   direction: string;
   leverage: number;
   leverage_type: string | null;
-  stoploss: number;
+  stoploss: number | null;
   exchange: string;
   status: string;
   pnl: number;
@@ -34,11 +34,19 @@ export interface DbSignal {
   max_reached_tp: number;
 }
 
+function dateToUnixTimestamp(date: Date) {
+  if (date == null) return null;
+
+  return date.getTime() / 1000;
+}
+
 export function createSignal(db: DB, signal: DbSignal) {
-  const cmd = db.prepareQuery<any, any, any>(`INSERT INTO signals(channel_id, date, signal_id, coin, direction, leverage, leverage_type, stoploss, exchange, status, pnl, max_loss, max_profit, max_reached_entry, max_reached_tp)
+  const cmd = db.prepareQuery<any, any, any>(`INSERT INTO signals(channel_id, timestamp, signal_id, coin, direction, leverage, leverage_type, stoploss, exchange, status, pnl, max_loss, max_profit, max_reached_entry, max_reached_tp)
     VALUES (:channel_id, :date, :signal_id, :coin, :direction, :leverage, :leverage_type, :stoploss, :exchange, :status, :pnl, :max_loss, :max_profit, :max_reached_entry, :max_reached_tp)`);
 
-    cmd.execute(signal);
+    const signalWithDate = { ...signal, date: dateToUnixTimestamp(signal.date)?.toString() };
+
+    cmd.execute(signalWithDate);
     cmd.finalize();
 
     return db.lastInsertRowId;
@@ -77,29 +85,38 @@ export function createSignalConfigTp(db: DB, entry: DbSignalConfigTp) {
 }
 
 export interface DbSignalReachedEntry extends DbSignalConfigEntry {
-  date: Date
+  date: Date;
   entry_id: number;
 }
 
 export function createSignalReachedEntry(db: DB, entry: Partial<DbSignalReachedEntry>) {
-  const cmd = db.prepareQuery<any, any, any>(`INSERT INTO signal_reached_entry(signal_id, entry_id, value, date)
+  const cmd = db.prepareQuery<any, any, any>(`INSERT INTO signal_reached_entry(signal_id, entry_id, value, timestamp)
     VALUES (:signal_id, :entry_id, :value, :date)`);
 
-    cmd.execute(entry);
+    const entryWithDate = { ...entry, date: dateToUnixTimestamp(entry.date!)?.toString() };
+
+    cmd.execute(entryWithDate);
     cmd.finalize();
 
     return db.lastInsertRowId;
 }
 
-export interface DbSignalReachedTp extends DbSignalConfigTp {
-  date: Date
+export interface DbSignalReachedTp {
+  id?: number;
+  date: Date;
+  tp_id: number | null;
+  signal_id: number;
+  percentage: number | null;
+  value: number;
 }
 
 export function createSignalReachedTp(db: DB, entry: DbSignalReachedTp) {
-  const cmd = db.prepareQuery<any, any, any>(`INSERT INTO signal_reached_tp(signal_id, tp_id, value, date)
+  const cmd = db.prepareQuery<any, any, any>(`INSERT INTO signal_reached_tp(signal_id, tp_id, value, timestamp)
     VALUES (:signal_id, :tp_id, :value, :date)`);
 
-    cmd.execute(entry);
+    const entryWithDate = { ...entry, date: dateToUnixTimestamp(entry.date!)?.toString() };
+
+    cmd.execute(entryWithDate);
     cmd.finalize();
 
     return db.lastInsertRowId;
@@ -113,7 +130,7 @@ export interface DbRawSignal {
 }
 
 export function createRawSignal(db: DB, entry: DbSignalConfigTp) {
-  const cmd = db.prepareQuery<any, any, any>(`INSERT INTO raw_signal(signal_id, date, text, type)
+  const cmd = db.prepareQuery<any, any, any>(`INSERT INTO raw_signal(signal_id, timestamp, text, type)
                                               VALUES (:signal_id, :date, :text, :type)`);
 
   cmd.execute(entry);

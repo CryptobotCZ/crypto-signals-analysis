@@ -5,6 +5,7 @@ import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts
 import { getAllMessages as getAltSignalsMessages } from "../altsignals.ts";
 import { getAllMessages as getBKChannelMessages } from "../binance-killers-channel.ts";
 import { getAllMessages as getBKCornixMessages } from "../binance-killers-cornix.ts";
+import { getAllMessages as getBitsturtleMessages, getOrderSignalInfoFull as getBitsTurtleOrderSignalInfoFull } from "../bitsturtle.ts";
 import { OrderDetail, StopLoss, getOrderSignalInfoFull, getOrderSignals, groupRelatedSignals, mapSLToOrder } from "../parser.ts";
 
 export async function parseFile<T>(path: string, parser: () => T[]) {
@@ -38,6 +39,7 @@ export async function parse(directory: string, group: string) {
         .with('bk-group', () => getBKChannelMessages)
         .with('bk-cornix', () => getBKCornixMessages)
         .with('altsignals', () => getAltSignalsMessages)
+        .with('bitsturtle', () => getBitsturtleMessages)
         .with(_, () => { throw new Error('Invalid group'); })
         .exhaustive();
 
@@ -47,8 +49,16 @@ export async function parse(directory: string, group: string) {
     const unknownMessages = messages.filter(x => x.type === 'unknown');
     const slSignals = messages.filter(x => x.type == 'SL') as StopLoss[];
 
+    const getOrderInfo = group === 'bitsturtle' ? getBitsTurtleOrderSignalInfoFull : getOrderSignalInfoFull;
     const groupedSignals = groupRelatedSignals(messages);
-    const orderSignals = getOrderSignals(messages).map(x => getOrderSignalInfoFull(x, groupedSignals)) as OrderDetail[];
+    const orderSignals = getOrderSignals(messages).map(x => getOrderInfo(x, groupedSignals)) as OrderDetail[];
+
+    const ordersWithoutTp = orderSignals.filter(x => x.other.length == 0);
+
+    // const recentMessages = messages.filter(x => x.date >= new Date(2023, 5, 10));
+    // const groupedRecentSignals = groupRelatedSignals(recentMessages);
+    // const recentOrderSignals = getOrderSignals(recentMessages).map(x => getOrderInfo(x, groupedRecentSignals)) as OrderDetail[];
+
 
     slSignals.forEach(x => mapSLToOrder(x, orderSignals, groupedSignals, messages));
 
@@ -60,6 +70,18 @@ export async function parse(directory: string, group: string) {
 
     console.log( { sumTpPcts, avgTpPcts });
     console.log(messages);
+
+   const messageStats = messages.reduce((agg: any, x) => {
+        if (!Object.hasOwn(agg, x.type)) {
+          agg[x.type] = 0;
+        }
+
+        agg[x.type]++;
+
+        return agg;
+      }, {});
+
+    console.log({ messageStats });
 
     return { messages, orderSignals, groupedSignals };
 }
