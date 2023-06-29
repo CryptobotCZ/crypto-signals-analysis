@@ -16,6 +16,73 @@
                 "--inspect-wait",
                 "--allow-all"
             ],
+            "args": [
+                "import",
+                "C:\\projects\\crypto\\signals-analysis\\data\\binance-killers-cornix-2023-05-25",
+                "bk-cornix",
+            ],
+            "attachSimplePort": 9229
+        },
+        {
+            "request": "launch",
+            "name": "Debug BitsTurtle",
+            "type": "node",
+            "program": "${workspaceFolder}/main.ts",
+            "cwd": "${workspaceFolder}",
+            "runtimeExecutable": "C:\\ProgramData\\chocolatey\\lib\\deno\\deno.EXE",
+            "runtimeArgs": [
+                "run",
+                "--inspect-wait",
+                "--allow-all"
+            ],
+            "args": [
+                "import",
+                "C:\\projects\\crypto\\signals-analysis\\data\\bitsturtle",
+                "bitsturtle",
+            ],
+            "attachSimplePort": 9229
+        },
+        {
+            "request": "launch",
+            "name": "Debug Backtrack BT",
+            "type": "node",
+            "program": "${workspaceFolder}/main.ts",
+            "cwd": "${workspaceFolder}",
+            "runtimeExecutable": "C:\\ProgramData\\chocolatey\\lib\\deno\\deno.EXE",
+            "runtimeArgs": [
+                "run",
+                "--inspect-wait",
+                "--allow-all"
+            ],
+            "args": [
+                "backtest",
+                "C:\\projects\\crypto\\signals-analysis\\data\\bitsturtle",
+                "EGLDUSDT",
+                "LONG",
+                "36.5",
+                "1683889680"
+            ],
+            "attachSimplePort": 9229
+        },
+        {
+            "request": "launch",
+            "name": "Debug Export From Source BK",
+            "type": "node",
+            "program": "${workspaceFolder}/main.ts",
+            "cwd": "${workspaceFolder}",
+            "runtimeExecutable": "C:\\ProgramData\\chocolatey\\lib\\deno\\deno.EXE",
+            "runtimeArgs": [
+                "run",
+                "--inspect-wait",
+                "--allow-all"
+            ],
+            "args": [
+                "export-from-source",
+                "C:\\projects\\crypto\\signals-analysis\\data\\binance-killers-history-signals",
+                "bk-cornix",
+                "C:\\projects\\crypto\\signals-analysis\\bk-anon.csv",
+                "--anonymize"
+            ],
             "attachSimplePort": 9229
         }
     ]
