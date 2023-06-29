@@ -5,6 +5,7 @@ import { up } from './src/migrations/01-create-db.ts';
 import { db } from "./src/database.ts";
 import { parse } from './src/commands/parse.ts';
 import { importData } from "./src/commands/import.ts";
+import { exportFromSource } from './src/commands/export.ts';
 
 // Learn more at https://deno.land/manual/examples/module_metadata#concepts
 if (import.meta.main) {
@@ -24,13 +25,6 @@ const addSignalsArgs = (yargs: any) => {
 };
 
 yargs(Deno.args)
-  .command('download <files...>', 'download a list of files', (yargs: any) => {
-    return yargs.positional('files', {
-      describe: 'a list of files to do something with'
-    })
-  }, (argv: Arguments) => {
-    console.info(argv)
-  })
   .command('init', 'initialize database', (yargs: any) => {}, async (argv: Arguments) => {
     await up(db);
   })
@@ -62,10 +56,34 @@ yargs(Deno.args)
   }, async (argv: Arguments) => {
       await importData(argv.directory, argv.signals);
   })
-  .command('export <signals> <file>', 'export signals', (yargs: any) => {
+  .command('export <signals> <file>', 'Export signals from DB to CSV', (yargs: any) => {
+    yargs.positional('file', {
+      describe: 'path exported .csv file',
+      type: 'string'
+    });
+
+    yargs.option('anonymize');
+
     addSignalsArgs(yargs);
   }, (argv: Arguments) => {
+    console.log(argv);
+  })
+  .command('export-from-source <directory> <signals> <file>', 'Export signals from source to CSV', (yargs: any) => {
+    yargs.positional('file', {
+      describe: 'path exported .csv file',
+      type: 'string'
+    });
 
+    yargs.positional('directory', {
+      describe: 'path to directory with signals to parse',
+      type: 'string'
+    });
+
+    yargs.option('anonymize');
+
+    addSignalsArgs(yargs);
+  }, async (argv: Arguments) => {
+    await exportFromSource(argv.directory, argv.signals, argv.file, argv.anonymize);
   })
   .strictCommands()
   .demandCommand(1)

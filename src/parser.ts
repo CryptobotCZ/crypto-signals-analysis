@@ -114,7 +114,7 @@ export function parseOrderText(message: string, pattern: RegExp): Partial<Order>
 
     if (match) {
       const coin = match[1];
-      const direction = match[2];
+      const direction = match[2].toUpperCase();
       const exchange = match[3];
       const leverage = parseInt(match[4].replace('x', ''));
       const entry = match[5].trim().split(" - ").map(x => x.trim().replace(",", "")).map(x => parseFloat(x));
@@ -144,7 +144,7 @@ export function parseSpotOrder(messageDiv: HTMLElement, pattern: RegExp): Partia
 
     if (match) {
       const coin = match[1].trim();
-      const direction = match[2].trim();
+      const direction = match[2].trim().toUpperCase();
       const entry = match[3].trim().split(" - ").map(x => x.trim().replace(",", "")).map(x => parseFloat(x));
       const targets = match[4].trim().split(" - ").map(x => x.trim().replace(",", "")).map(x => parseFloat(x));
       const stopLoss = parseFloat(match[5].trim().replace(",", ""));
