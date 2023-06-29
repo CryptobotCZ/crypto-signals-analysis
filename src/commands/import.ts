@@ -5,8 +5,8 @@ import { parse } from "./parse.ts";
 
 
 
-export async function importData(directory: string, channel: string) {
-    const parsedData = await parse(directory, channel);
+export async function importData(inputFiles: string[], channel: string) {
+    const parsedData = await parse(inputFiles, channel);
 
     const channelId = getChannelIdByName(db, channel);
 

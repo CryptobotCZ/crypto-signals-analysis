@@ -33,32 +33,31 @@ yargs(Deno.args)
       const result = query.all();
       query.finalize();
 
-      console.log(result);
       const version = result[result.length - 1]['version' as any];
 
       console.info(`Current DB version: ${version}`)
   })
-  .command('parse <directory> <signals>', 'Parse signals', (yargs: any) => {
-    yargs.positional('directory', {
-      describe: 'path to directory with signals to parse',
-      type: 'string'
+  .command('parse <signals> <inputFiles...>', 'Parse signals', (yargs: any) => {
+    yargs.positional('inputFiles', {
+      describe: 'Path to directory with signals files or to individual signal .html files',
+      type: 'string[]'
     });
     addSignalsArgs(yargs);
   }, async (argv: Arguments) => {
-      await parse(argv.directory, argv.signals);
+      await parse(argv.inputFiles, argv.signals);
   })
-  .command('import <directory> <signals>', 'Import signals to DB', (yargs: any) => {
-    yargs.positional('directory', {
-      describe: 'path to directory with signals to parse',
-      type: 'string'
+  .command('import <signals> <inputFiles...>', 'Import signals to DB', (yargs: any) => {
+    yargs.positional('inputFiles', {
+      describe: 'Path to directory with signals files or to individual signal .html files',
+      type: 'string[]'
     });
     addSignalsArgs(yargs);
   }, async (argv: Arguments) => {
-      await importData(argv.directory, argv.signals);
+      await importData(argv.inputFiles, argv.signals);
   })
-  .command('export <signals> <file>', 'Export signals from DB to CSV', (yargs: any) => {
-    yargs.positional('file', {
-      describe: 'path exported .csv file',
+  .command('export <signals> <outputPath>', 'Export signals from DB to CSV', (yargs: any) => {
+    yargs.positional('outputPath', {
+      describe: 'Exported .csv file path',
       type: 'string'
     });
 
@@ -66,24 +65,24 @@ yargs(Deno.args)
 
     addSignalsArgs(yargs);
   }, (argv: Arguments) => {
-    console.log(argv);
+    console.log('Currently not implemented');
   })
-  .command('export-from-source <directory> <signals> <file>', 'Export signals from source to CSV', (yargs: any) => {
-    yargs.positional('file', {
-      describe: 'path exported .csv file',
+  .command('export-from-source <signals> <outputPath> <inputFiles...>', 'Export signals from source to CSV', (yargs: any) => {
+    yargs.positional('outputPath', {
+      describe: 'Exported .csv file path',
       type: 'string'
     });
 
-    yargs.positional('directory', {
-      describe: 'path to directory with signals to parse',
-      type: 'string'
+    yargs.positional('inputFiles', {
+      describe: 'Path to directory with signals files or to individual signal .html files',
+      type: 'string[]'
     });
 
     yargs.option('anonymize');
 
     addSignalsArgs(yargs);
   }, async (argv: Arguments) => {
-    await exportFromSource(argv.directory, argv.signals, argv.file, argv.anonymize);
+    await exportFromSource(argv.inputFiles, argv.signals, argv.outputPath, argv.anonymize);
   })
   .strictCommands()
   .demandCommand(1)

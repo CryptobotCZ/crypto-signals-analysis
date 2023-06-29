@@ -1,6 +1,7 @@
 import { _ } from "https://deno.land/x/fuzzy_octo_guacamole@v3.0.0/patterns.ts";
 import { match } from "https://deno.land/x/fuzzy_octo_guacamole@v3.0.0/mod.ts";
 import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
+import * as fs from "https://deno.land/std@0.192.0/fs/mod.ts";
 
 import { getAllMessages as getAltSignalsMessages } from "../altsignals.ts";
 import { getAllMessages as getBKChannelMessages } from "../binance-killers-channel.ts";
@@ -19,12 +20,33 @@ export async function parseFile<T>(path: string, parser: () => T[]) {
     return messagesFromFile;
   }
 
-export async function parseAll<T>(directory: string, parser: () => T[]) {
+export async function parseAll<T>(inputPaths: string[], parser: () => T[]) {
     let messages: T[] = [];
 
-    for await (const dirEntry of Deno.readDir(directory)) {
-      if (dirEntry.isFile && dirEntry.name.endsWith(".html")) {
-        const messagesFromFile = await parseFile(`${directory}/${dirEntry.name}`, parser);
+    for (const path of inputPaths) {
+
+      const isReadableDir = await fs.exists(path, {
+        isReadable: true,
+        isDirectory: true
+      });
+
+      const isReadableFile = await fs.exists(path, {
+        isReadable: true,
+        isFile: true
+      });
+
+      if (isReadableDir) {
+        const directory = path;
+        for await (const dirEntry of Deno.readDir(directory)) {
+          if (dirEntry.isFile && dirEntry.name.endsWith(".html")) {
+            const messagesFromFile = await parseFile(`${directory}/${dirEntry.name}`, parser);
+            messages = [ ...messages, ...messagesFromFile ];
+          }
+        }
+      }
+
+      if (isReadableFile) {
+        const messagesFromFile = await parseFile(path, parser);
         messages = [ ...messages, ...messagesFromFile ];
       }
     }
@@ -32,9 +54,7 @@ export async function parseAll<T>(directory: string, parser: () => T[]) {
     return messages;
   }
 
-export async function parse(directory: string, group: string) {
-    console.log( { directory, group });
-
+export async function parse(directory: string[], group: string) {
     const parser = match(group)
         .with('bk-group', () => getBKChannelMessages)
         .with('bk-cornix', () => getBKCornixMessages)

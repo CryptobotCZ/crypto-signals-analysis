@@ -28,8 +28,8 @@ function getDecimalSeparator(locale: string) {
 
 export async function exportFromDb() {}
 
-export async function exportFromSource(directory: string, channel: string, destination: string, anonymize: boolean = false, config: ExportConfig = defaultConfig) {
-  const parsedData = await parse(directory, channel);
+export async function exportFromSource(inputFiles: string[], channel: string, destination: string, anonymize: boolean = false, config: ExportConfig = defaultConfig) {
+  const parsedData = await parse(inputFiles, channel);
 
   await doExport(parsedData.orderSignals, destination, anonymize, config);
 }
