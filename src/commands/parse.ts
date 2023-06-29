@@ -88,9 +88,6 @@ export async function parse(directory: string[], group: string) {
     const sumTpPcts = binanceFuturesProfitable.reduce((sum, x) => sum + x.tps[x.tps.length - 1].pct, 0);
     const avgTpPcts =  sumTpPcts / binanceFuturesProfitable.length;
 
-    console.log( { sumTpPcts, avgTpPcts });
-    console.log(messages);
-
    const messageStats = messages.reduce((agg: any, x) => {
         if (!Object.hasOwn(agg, x.type)) {
           agg[x.type] = 0;
@@ -101,7 +98,8 @@ export async function parse(directory: string[], group: string) {
         return agg;
       }, {});
 
-    console.log({ messageStats });
+    console.info('Parsed messages statistics: ');
+    console.info({ messageStats });
 
     return { messages, orderSignals, groupedSignals };
 }

@@ -556,8 +556,6 @@ export function getOrderSignals(signals: Message[]): Order[] {
 }
 
 export function mapSLToOrder(slSignal: StopLoss, orderSignals: OrderDetail[], groupedSignals: GroupedSignals, allSignals: Message[]) {
-    console.log(slSignal);
-
     const originallyMappedOrder = groupedSignals[slSignal.relatedTo!]?.[0] as Order;
 
     if (originallyMappedOrder == null) {
