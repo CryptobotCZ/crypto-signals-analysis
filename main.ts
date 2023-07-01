@@ -13,13 +13,14 @@ if (import.meta.main) {
 }
 
 const signals = [
-  'altsignals', 'bitsturtle', 'bk-cornix', 'bk-group'
+  'altsignals', 'bitsturtle', 'bk-cornix', 'bk-group', 'generic'
 ];
 
 const addSignalsArgs = (yargs: any) => {
-  yargs.positional('signals', {
+  yargs.option('signals', {
     describe: 'signal group to parse',
-    type: 'string'
+    type: 'string',
+    default: 'generic'
   });
   yargs.choices('signals', signals);
 };
@@ -29,6 +30,20 @@ const addDbArg = (yargs: any) => {
     describe: 'database path',
     type: 'string',
     default: 'database.dat'
+  });
+};
+
+const addInputFilesArg = (yargs: any) => {
+  yargs.positional('inputFiles', {
+    describe: 'Path to directory with signals files or to individual signal .html files',
+    type: 'string[]'
+  });
+};
+
+const addOutputPathArg = (yargs: any) => {
+  yargs.positional('outputPath', {
+    describe: 'Exported .csv file path',
+    type: 'string'
   });
 };
 
@@ -52,31 +67,22 @@ yargs(Deno.args)
 
       console.info(`Current DB version: ${version}`)
   })
-  .command('parse <signals> <inputFiles...>', 'Parse signals', (yargs: any) => {
-    yargs.positional('inputFiles', {
-      describe: 'Path to directory with signals files or to individual signal .html files',
-      type: 'string[]'
-    });
+  .command('parse <inputFiles...>', 'Parse signals', (yargs: any) => {
+    addInputFilesArg(yargs);
     addSignalsArgs(yargs);
   }, async (argv: Arguments) => {
       await parse(argv.inputFiles, argv.signals);
   })
-  .command('import <signals> <inputFiles...>', 'Import signals to DB', (yargs: any) => {
-    yargs.positional('inputFiles', {
-      describe: 'Path to directory with signals files or to individual signal .html files',
-      type: 'string[]'
-    });
+  .command('import <inputFiles...>', 'Import signals to DB', (yargs: any) => {
+    addInputFilesArg(yargs);
     addDbArg(yargs);
     addSignalsArgs(yargs);
   }, async (argv: Arguments) => {
       const db = await getDatabaseFromPath(argv.database);
       await importData(argv.inputFiles, argv.signals, db);
   })
-  .command('export <signals> <outputPath>', 'Export signals from DB to CSV', (yargs: any) => {
-    yargs.positional('outputPath', {
-      describe: 'Exported .csv file path',
-      type: 'string'
-    });
+  .command('export <outputPath>', 'Export signals from DB to CSV', (yargs: any) => {
+    addOutputPathArg(yargs);
     addDbArg(yargs);
     yargs.option('anonymize');
 
@@ -84,16 +90,9 @@ yargs(Deno.args)
   }, (argv: Arguments) => {
     console.log('Currently not implemented');
   })
-  .command('export-from-source <signals> <outputPath> <inputFiles...>', 'Export signals from source to CSV', (yargs: any) => {
-    yargs.positional('outputPath', {
-      describe: 'Exported .csv file path',
-      type: 'string'
-    });
-
-    yargs.positional('inputFiles', {
-      describe: 'Path to directory with signals files or to individual signal .html files',
-      type: 'string[]'
-    });
+  .command('export-from-source <outputPath> <inputFiles...>', 'Export signals from source to CSV', (yargs: any) => {
+    addOutputPathArg(yargs);
+    addInputFilesArg(yargs);
 
     yargs.option('anonymize');
     yargs.option('locale');
