@@ -1,11 +1,10 @@
+import { DB } from 'https://deno.land/x/sqlite@v3.7.2/mod.ts';
 import { TakeProfitAll } from '../parser.ts';
-import { db, createSignal, getChannelIdByName, createSignalConfigEntry, createSignalConfigTp, createSignalReachedEntry, createSignalReachedTp } from "../database.ts";
+import { createSignal, getChannelIdByName, createSignalConfigEntry, createSignalConfigTp, createSignalReachedEntry, createSignalReachedTp } from "../database.ts";
 import { getMaxPotentialProfit, getPotentialLoss } from "../parser.ts";
 import { parse } from "./parse.ts";
 
-
-
-export async function importData(inputFiles: string[], channel: string) {
+export async function importData(inputFiles: string[], channel: string, db: DB) {
     const parsedData = await parse(inputFiles, channel);
 
     const channelId = getChannelIdByName(db, channel);

@@ -12,8 +12,9 @@ export async function down(schema: Schema) {
     await schema.dropTable("users");
 }
 
-export const db = new DB("test.db");
-
+export function getDatabaseFromPath(path: string) {
+  return new DB(path);
+}
 
 export interface DbSignal {
   id?: number;

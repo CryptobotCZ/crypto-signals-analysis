@@ -2,7 +2,7 @@ import yargs from 'https://deno.land/x/yargs/deno.ts'
 import { Arguments } from 'https://deno.land/x/yargs/deno-types.ts'
 
 import { up } from './src/migrations/01-create-db.ts';
-import { db } from "./src/database.ts";
+import { db, getDatabaseFromPath } from "./src/database.ts";
 import { parse } from './src/commands/parse.ts';
 import { importData } from "./src/commands/import.ts";
 import { exportFromSource } from './src/commands/export.ts';
@@ -24,11 +24,27 @@ const addSignalsArgs = (yargs: any) => {
   yargs.choices('signals', signals);
 };
 
+const addDbArg = (yargs: any) => {
+  yargs.option('database', {
+    describe: 'database path',
+    type: 'string',
+    default: 'database.dat'
+  });
+};
+
 yargs(Deno.args)
-  .command('init', 'initialize database', (yargs: any) => {}, async (argv: Arguments) => {
+  .command('init', 'initialize database', (yargs: any) => {
+    addDbArg(yargs);
+  }, async (argv: Arguments) => {
+    console.log(argv);
+    const db = getDatabaseFromPath(argv.database);
     await up(db);
   })
-  .command('verify', 'verify database', (yargs: any) => {}, (argv: Arguments) => {
+  .command('verify', 'verify database', (yargs: any) => {
+    addDbArg(yargs);
+  }, (argv: Arguments) => {
+      const db = getDatabaseFromPath(argv.database);
+
       const query = db.prepareQuery('SELECT * FROM db_version');
       const result = query.all();
       query.finalize();
@@ -51,16 +67,18 @@ yargs(Deno.args)
       describe: 'Path to directory with signals files or to individual signal .html files',
       type: 'string[]'
     });
+    addDbArg(yargs);
     addSignalsArgs(yargs);
   }, async (argv: Arguments) => {
-      await importData(argv.inputFiles, argv.signals);
+      const db = getDatabaseFromPath(argv.database);
+      await importData(argv.inputFiles, argv.signals, db);
   })
   .command('export <signals> <outputPath>', 'Export signals from DB to CSV', (yargs: any) => {
     yargs.positional('outputPath', {
       describe: 'Exported .csv file path',
       type: 'string'
     });
-
+    addDbArg(yargs);
     yargs.option('anonymize');
 
     addSignalsArgs(yargs);
@@ -79,10 +97,12 @@ yargs(Deno.args)
     });
 
     yargs.option('anonymize');
+    yargs.option('locale');
 
     addSignalsArgs(yargs);
   }, async (argv: Arguments) => {
-    await exportFromSource(argv.inputFiles, argv.signals, argv.outputPath, argv.anonymize);
+    const config = { locale: argv.locale ?? 'en-UK' };
+    await exportFromSource(argv.inputFiles, argv.signals, argv.outputPath, argv.anonymize, config);
   })
   .strictCommands()
   .demandCommand(1)
