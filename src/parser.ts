@@ -107,19 +107,20 @@ export function parseOrder(messageDiv: HTMLElement, pattern: RegExp): Partial<Or
  *  4 - leverage
  *  5 - entry
  *  6 - targets
+ *  7 - sl
  * @returns
  */
 export function parseOrderText(message: string, pattern: RegExp): Partial<Order> | null {
     const match = pattern.exec(message.trim());
 
     if (match) {
-      const coin = match[1];
-      const direction = match[2].toUpperCase();
-      const exchange = match[3];
-      const leverage = parseInt(match[4].replace('x', ''));
-      const entry = match[5].trim().split(" - ").map(x => x.trim().replace(",", "")).map(x => parseFloat(x));
-      const targets = match[6].trim().split(" - ").map(x => x.trim().replace(",", "")).map(x => parseFloat(x));
-      const stopLoss = parseFloat(match[7].trim().replace(",", ""));
+      const coin = match.groups?.coin ?? match[1];
+      const direction = (match.groups?.direction ?? match[2]).toUpperCase();
+      const exchange = (match.groups?.exchange ?? match[3]);
+      const leverage = parseInt((match.groups?.leverage ?? match[4]).replace('x', ''));
+      const entry = (match.groups?.entry ?? match[5]).trim().split(" - ").map(x => x.trim().replace(",", "")).map(x => parseFloat(x));
+      const targets = (match.groups?.targets ?? match[6]).trim().split(" - ").map(x => x.trim().replace(",", "")).map(x => parseFloat(x));
+      const stopLoss = parseFloat((match.groups?.sl ?? match[7]).trim().replace(",", ""));
 
       const parsedMessage = {
         type: 'order' as any,
@@ -166,15 +167,26 @@ export function parseSpotOrder(messageDiv: HTMLElement, pattern: RegExp): Partia
   return null;
 }
 
+/**
+ *
+ * @param messageDiv
+ * @param pattern Pattern for parsing message. Needs to have following capture groups:
+ *  1 - exchange
+ *  2 - coin
+ *  3 - price
+ * @returns
+ */
 export function parseEntry(messageDiv: HTMLElement, pattern: RegExp): Partial<Entry> | null {
     const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
     const entryMatch = pattern.exec(message);
 
     if (entryMatch) {
-        const coin = entryMatch[2];
-        const exchange = entryMatch[1];
-        const entry = parseInt(entryMatch[3].trim());
-        const price = parseFloat(entryMatch[4].trim().replace(",", ""));
+        const exchange = entryMatch.groups?.exchange ?? entryMatch[1];
+        const coin = entryMatch.groups?.coin ?? entryMatch[2];
+        const entryStr = entryMatch?.groups?.entry ?? entryMatch[3];
+        const entry = parseInt(entryStr.trim());
+        const priceStr = entryMatch.groups?.price ?? entryMatch[4];
+        const price = parseFloat(priceStr.trim().replace(",", ""));
 
         const referencedMessageId = getReferencedMessageId(messageDiv);
 
@@ -193,6 +205,15 @@ export function parseEntry(messageDiv: HTMLElement, pattern: RegExp): Partial<En
     return null;
 }
 
+/**
+ *
+ * @param messageDiv
+ * @param pattern Pattern for parsing message. Needs to have following capture groups:
+ *  1 - exchange
+ *  2 - coin
+ *  3 - price
+ * @returns
+ */
 export function parseEntryAll(messageDiv: HTMLElement, pattern: RegExp): Partial<EntryAll> | null {
     const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
     const entryMatch = pattern.exec(message);
@@ -200,9 +221,10 @@ export function parseEntryAll(messageDiv: HTMLElement, pattern: RegExp): Partial
     if (entryMatch) {
         const referencedMessageId = getReferencedMessageId(messageDiv);
 
-        const coin = entryMatch[2];
-        const exchange = entryMatch[1];
-        const price = parseFloat(entryMatch[3].trim().replace(",", ""));
+        const exchange = entryMatch.groups?.exchange ?? entryMatch[1];
+        const coin = entryMatch.groups?.coin ?? entryMatch[2];
+        const priceStr = entryMatch.groups?.price ?? entryMatch[3];
+        const price = parseFloat(priceStr.trim().replace(",", ""));
 
         const parsedEntry = {
             relatedTo: referencedMessageId,
@@ -219,13 +241,20 @@ export function parseEntryAll(messageDiv: HTMLElement, pattern: RegExp): Partial
 }
 
 
+/**
+ *
+ * @param messageDiv
+ * @param pattern Pattern for parsing message. Needs to have following capture groups:
+ *  1 - coin
+ * @returns
+ */
 export function parseClose(messageDiv: HTMLElement, pattern: RegExp): Partial<Close> | null {
     const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
     const match = pattern.exec(message);
 
     if (match) {
         const referencedMessageId = getReferencedMessageId(messageDiv);
-        const coin = match[1];
+        const coin = match.groups?.coin ?? match[2];
 
         const parsedEntry = {
               relatedTo: referencedMessageId,
@@ -239,14 +268,22 @@ export function parseClose(messageDiv: HTMLElement, pattern: RegExp): Partial<Cl
     return null;
 }
 
+/**
+ *
+ * @param messageDiv
+ * @param pattern Pattern for parsing message. Needs to have following capture groups:
+ *  1 - exchange
+ *  2 - coin
+ * @returns
+ */
 export function parseCancelled(messageDiv: HTMLElement, pattern: RegExp): Partial<Cancel> | null {
     const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
     const match = pattern.exec(message);
 
     if (match) {
         const referencedMessageId = getReferencedMessageId(messageDiv);
-        const exchange = match[1];
-        const coin = match[2];
+        const exchange = match.groups?.exchange ?? match[1];
+        const coin = match.groups?.coin ?? match[2];
 
         const parsedEntry = {
             relatedTo: referencedMessageId,
@@ -262,14 +299,22 @@ export function parseCancelled(messageDiv: HTMLElement, pattern: RegExp): Partia
 }
 
 
+/**
+ *
+ * @param messageDiv
+ * @param pattern Pattern for parsing message. Needs to have following capture groups:
+ *  1 - exchange
+ *  2 - coin
+ * @returns
+ */
 export function parseOpposite(messageDiv: HTMLElement, pattern: RegExp): Partial<Opposite> | null {
     const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
 
     const match = pattern.exec(message);
     if (match) {
         const referencedMessageId = getReferencedMessageId(messageDiv);
-        const exchange = match[1];
-        const coin = match[2];
+        const exchange = match.groups?.exchange ?? match[1];
+        const coin = match.groups?.coin ?? match[2];
 
         const parsedEntry = {
             relatedTo: referencedMessageId,
@@ -285,14 +330,22 @@ export function parseOpposite(messageDiv: HTMLElement, pattern: RegExp): Partial
 }
 
 
+/**
+ *
+ * @param messageDiv
+ * @param pattern Pattern for parsing message. Needs to have following capture groups:
+ *  1 - exchange
+ *  2 - coin
+ * @returns
+ */
 export function parseSLAfterTP(messageDiv: HTMLElement, pattern: RegExp): Partial<SLAfterTP> | null {
     const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
     const match = pattern.exec(message);
 
     if (match) {
         const referencedMessageId = getReferencedMessageId(messageDiv);
-        const exchange = match[1];
-        const coin = match[2];
+        const exchange = match.groups?.exchange ?? match[1];
+        const coin = match.groups?.coin ?? match[2];
 
         const parsedEntry = {
               relatedTo: referencedMessageId,
@@ -308,15 +361,24 @@ export function parseSLAfterTP(messageDiv: HTMLElement, pattern: RegExp): Partia
 }
 
 
+/**
+ *
+ * @param messageDiv
+ * @param pattern Pattern for parsing message. Needs to have following capture groups:
+ *  1 - exchange
+ *  2 - coin
+ *  3 - loss
+ * @returns
+ */
 export function parseSL(messageDiv: HTMLElement, pattern: RegExp): Partial<StopLoss> | null {
     const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
     const match = pattern.exec(message);
 
     if (match) {
         const referencedMessageId = getReferencedMessageId(messageDiv);
-        const exchange = match[1];
-        const coin = match[2];
-        const pctStr = match[3];
+        const exchange = match.groups?.exchange ?? match[1];
+        const coin = match.groups?.coin ?? match[2];
+        const pctStr = match.groups?.loss ?? match[3];
         const pct = parseFloat(pctStr.replace("%", ""));
 
         const parsedEntry = {
@@ -333,6 +395,17 @@ export function parseSL(messageDiv: HTMLElement, pattern: RegExp): Partial<StopL
     return null;
 }
 
+/**
+ *
+ * @param messageDiv
+ * @param pattern Pattern for parsing message. Needs to have following capture groups:
+ *  1 - exchange
+ *  2 - coin
+ *  3 - target
+ *  4 - profit
+ *  5 - time
+ * @returns
+ */
 export function parseTP(messageDiv: HTMLElement, pattern: RegExp): Partial<TakeProfit> | null {
     const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
 
@@ -340,12 +413,12 @@ export function parseTP(messageDiv: HTMLElement, pattern: RegExp): Partial<TakeP
 
     if (match) {
         const referencedMessageId = getReferencedMessageId(messageDiv);
-        const exchange = match[1];
-        const coin = match[2];
-        const tp = parseInt(match[3]);
-        const pctStr = match[4];
+        const exchange = match.groups?.exchange ?? match[1];
+        const coin = match.groups?.coin ?? match[2];
+        const tp = parseInt(match.groups?.target ?? match[3]);
+        const pctStr = match.groups?.profit ?? match[4];
         const pct = parseFloat(pctStr.replace("%", ""));
-        const time = match[5];
+        const time = match.groups?.time ?? match[5];
 
         const parsedEntry = {
               relatedTo: referencedMessageId,
@@ -364,16 +437,26 @@ export function parseTP(messageDiv: HTMLElement, pattern: RegExp): Partial<TakeP
     return null;
 }
 
+/**
+ *
+ * @param messageDiv
+ * @param pattern Pattern for parsing message. Needs to have following capture groups:
+ *  1 - exchange
+ *  2 - coin
+ *  3 - target
+ *  4 - time
+ * @returns
+ */
 export function parseTPWithoutProfit(messageDiv: HTMLElement, pattern: RegExp): Partial<TakeProfit> | null {
     const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
     const match = pattern.exec(message);
 
     if (match) {
         const referencedMessageId = getReferencedMessageId(messageDiv);
-        const exchange = match[1];
-        const coin = match[2];
-        const tp = parseInt(match[3]);
-        const time = match[5];
+        const exchange = match.groups?.exchange ?? match[1];
+        const coin = match.groups?.coin ?? match[2];
+        const tp = parseInt(match.groups?.target ?? match[3]);
+        const time = match.groups?.time ?? match[4];
 
         const parsedEntry = {
               relatedTo: referencedMessageId,
@@ -393,17 +476,27 @@ export function parseTPWithoutProfit(messageDiv: HTMLElement, pattern: RegExp): 
 }
 
 
+/**
+ * Parse all take profits reached message
+ * @param messageDiv
+ * @param pattern Pattern for parsing message. Needs to have following capture groups:
+ *  1 - exchange
+ *  2 - coin
+ *  3 - profit
+ *  4 - time
+ * @returns
+ */
 export function parseTPAll(messageDiv: HTMLElement, pattern: RegExp): Partial<TakeProfitAll> | null {
     const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
     const match = pattern.exec(message);
 
     if (match) {
         const referencedMessageId = getReferencedMessageId(messageDiv);
-        const exchange = match[1];
-        const coin = match[2];
-        const pctStr = match[3];
-        const pct = parseFloat(match[3].replace("%", ''));
-        const time = match[4];
+        const exchange = match.groups?.exchange ?? match[1];
+        const coin = match.groups?.coin ?? match[2];
+        const pctStr = match.groups?.profit ?? match[3];
+        const pct = parseFloat(pctStr.replace("%", ''));
+        const time = match.groups?.time ?? match[4];
 
         const parsedEntry = {
             relatedTo: referencedMessageId,

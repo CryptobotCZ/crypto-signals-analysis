@@ -32,12 +32,12 @@ mapSLToOrder,
 } from "./parser.ts";
 
 export function parseOrder(messageDiv: HTMLElement): Partial<Order> | null {
-    const pattern = /COIN: \$?(.+)Direction: (.+)Exchange: (.+)Leverage: (.+)ENTRY: (.+)TARGETS: (.+)STOP LOSS: (.+)/g;
+    const pattern = /COIN: \$?(?<coin>.+)Direction: (?<direction>.+)Exchange: (?<exchange>.+)Leverage: (?<leverage>.+)ENTRY: (?<entry>.+)TARGETS: (?<targets>.+)STOP LOSS: (?<sl>.+)/g;
     return baseParseOrder(messageDiv, pattern);
 }
 
 export function parseOrder2(messageDiv: HTMLElement): Partial<Order> | null {
-    const pattern = /COIN: \$?(.+)\nDirection: (.+)\nExchange: (.+)\nLeverage: (.+)\n\nENTRY: (.+)\nOTE: (.+)\n\nTARGETS\nShort Term: (.+)\nMid Term: (.+)\n\nSTOP LOSS: (.+)/g;
+    const pattern = /COIN: \$?(?<coin>.+)\nDirection: (?<direction>.+)\nExchange: (?<exchange>.+)\nLeverage: (?<leverage>.+)\n\nENTRY: (?<entry>.+)\nOTE: (?<ote>.+)\n\nTARGETS\nShort Term: (?<shortTerm>.+)\nMid Term: (?<midTerm>.+)\n\nSTOP LOSS: (?<sl>.+)/g;
 
     const message = messageDiv.textContent ?? '';
 
@@ -75,57 +75,58 @@ export function parseOrder2(messageDiv: HTMLElement): Partial<Order> | null {
 }
 
 export function parseSpotOrder(messageDiv: HTMLElement): Partial<Order> | null {
-    const pattern = /COIN: \$?(.+)Direction: (.+)ENTRY: (.+)TARGETS: (.+)STOP LOSS: (.+)/g;
+    const pattern = /COIN: \$?(?<coin>.*)Direction: (?<direction>.*)📈?(?:Exchange: )?(?<exchange>.*)ENTRY: (?<entry>.*)TARGETS: (?<targets>.*)STOP LOSS: (?<sl>.*)/gu;
+//    const pattern = /COIN: \$?(.*)Direction: (.*)(?:Exchange: )?(.*)ENTRY: (.*)TARGETS: (.*)STOP LOSS: (.*)/g;
     return baseParseSpotOrder(messageDiv, pattern);
 }
 
 export function parseEntry(messageDiv: HTMLElement): Partial<Entry> | null {
-    const entryPattern = /(.*)\n?\#(.*) Entry (?:target )?(\d+).*\n?Average Entry Price: (\d*\.?\d*)/gm;
+    const entryPattern = /(?<exchange>.*)\n?\#(?<coin>.*) Entry (?:target )?(?<entry>\d+).*\n?Average Entry Price: (?<price>\d*\.?\d*)/gm;
     return baseParseEntry(messageDiv, entryPattern);
 }
 
 export function parseEntryAll(messageDiv: HTMLElement): Partial<EntryAll> | null {
-    const entryPattern = /(.*)\n?#(.*) All entry targets achieved\n?Average Entry Price: (\d*\.?\d*)/gm;
+    const entryPattern = /(?<exchange>.*)\n?#(?<coin>.*) All entry targets achieved\n?Average Entry Price: (?<price>\d*\.?\d*)/gm;
     return baseParseEntryAll(messageDiv, entryPattern);
 }
 
 export function parseClose(messageDiv: HTMLElement): Partial<Close> | null {
-    const entryPattern = /CLOSE (.*)/;
+    const entryPattern = /CLOSE (?<coin>.*)/;
     return baseParseClose(messageDiv, entryPattern);
 }
 
 export function parseCancelled(messageDiv: HTMLElement): Partial<Cancel> | null {
-    const entryPattern = /(.*)\n?#(.*) Cancelled ❌\n?Target achieved before entering the entry zone/;
+    const entryPattern = /(?<exchange>.*)\n?#(?<coin>.*) Cancelled ❌\n?Target achieved before entering the entry zone/;
     return baseParseCancelled(messageDiv, entryPattern);
 }
 
 export function parseOpposite(messageDiv: HTMLElement): Partial<Opposite> | null {
-    const pattern = /(.*)\n?#(.*) Closed due to opposite direction signal/gm;
+    const pattern = /(?<exchange>.*)\n?#(?<coin>.*) Closed due to opposite direction signal/gm;
     return baseParseOpposite(messageDiv, pattern);
 }
 
 export function parseSLAfterTP(messageDiv: HTMLElement): Partial<SLAfterTP> | null {
-    const pattern = /(.*)\n?#(.*) Closed at .*stoploss after reaching take profit/gm;
+    const pattern = /(?<exchange>.*)\n?#(?<coin>.*) Closed at .*stoploss after reaching take profit/gm;
     return baseParseSLAfterTP(messageDiv, pattern);
 }
 
 export function parseSL(messageDiv: HTMLElement): Partial<StopLoss> | null {
-    const pattern = /(.*)\n?#(.*) Stoploss ⛔\n?Loss: ([\d\.\%]+) 📉/gm;
+    const pattern = /(?<exchange>.*)\n?#(?<coin>.*) Stoploss ⛔\n?Loss: (?<loss>[\d\.\%]+) 📉/gm;
     return baseParseSL(messageDiv, pattern);
 }
 
 export function parseTP(messageDiv: HTMLElement): Partial<TakeProfit> | null {
-    const pattern = /(.*)\n?#(.*) Take-Profit target (\d+) ✅\n?Profit: ([\d\.\%]+) 📈\n?Period: (.*) ⏰/gm;
+    const pattern = /(?<exchange>.*)\n?#(?<coin>.*) Take-Profit target (?<target>\d+) ✅\n?Profit: (?<profit>[\d\.\%]+) 📈\n?Period: (?<time>.*) ⏰/gm;
     return baseParseTP(messageDiv, pattern);
 }
 
 export function parseTPWithoutProfit(messageDiv: HTMLElement): Partial<TakeProfit> | null {
-    const pattern = /(.*)\n?#(.*) Take-Profit target (\d+) ✅\n?\n?Period: (.*) ⏰/gm;
+    const pattern = /(?<exchange>.*)\n?#(?<coin>.*) Take-Profit target (?<target>\d+) ✅\n?\n?Period: (?<time>.*) ⏰/gm;
     return baseParseTPWithoutProfit(messageDiv, pattern);
 }
 
 export function parseTPAll(messageDiv: HTMLElement): Partial<TakeProfitAll> | null {
-    const pattern = /(.*)\n?#(.*) All take-profit targets achieved 😎\n?Profit: ([\d\.\%]+) .*\n?Period: (.*) ⏰/gm;
+    const pattern = /(?<exchange>.*)\n?#(?<coin>.*) All take-profit targets achieved 😎\n?Profit: (?<profit>[\d\.\%]+) .*\n?Period: (?<time>.*) ⏰/gm;
     return baseParseTPAll(messageDiv, pattern);
 }
 
