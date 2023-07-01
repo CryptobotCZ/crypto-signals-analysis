@@ -88,7 +88,7 @@ export async function up(db: DB) {
     `);
 
     db.execute(`
-        CREATE TABLE raw_signal (
+        CREATE TABLE IF NOT EXISTS raw_signal (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             signal_id INTEGER,
             timestamp INTEGER,
@@ -100,11 +100,13 @@ export async function up(db: DB) {
     `);
 
     try {
-    const query = db.prepareQuery('INSERT INTO db_version(id, date) VALUES (:id, :date)');
-    query.execute({ id: 1, date: Math.floor(Date.now() / 1000) });
-    query.finalize();
+        const query = db.prepareQuery('INSERT INTO db_version(id, date) VALUES (:id, :date)');
+        query.execute({ id: 1, date: Math.floor(Date.now() / 1000) });
+        query.finalize();
     }
-    catch (err) { console.error(err); }
+    catch (err) {
+        console.error(err);
+    }
 }
 
 export async function down(db: DB) {

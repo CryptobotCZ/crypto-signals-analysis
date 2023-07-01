@@ -1,19 +1,35 @@
-import { Schema } from "https://deno.land/x/cotton/mod.ts";
 import { DB } from "https://deno.land/x/sqlite@v3.7.2/mod.ts";
+import { up } from "./migrations/01-create-db.ts";
 
-export async function up(schema: Schema) {
-    await schema.createTable("users", (table) => {
-      table.id();
-      table.varchar("name");
-    });
+const latestVersion = 1;
+
+export async function getDatabaseFromPath(path: string) {
+  const db = new DB(path);
+
+  if (!isDbUpToDate(db)) {
+    await up(db);
   }
 
-export async function down(schema: Schema) {
-    await schema.dropTable("users");
+  return db;
 }
 
-export function getDatabaseFromPath(path: string) {
-  return new DB(path);
+export function getCurrentDbVersion(db: DB) {
+  const query = db.prepareQuery('SELECT * FROM db_version');
+  const result = query.all();
+  query.finalize();
+
+  const version = result[result.length - 1][0];
+  return version;
+}
+
+export function isDbUpToDate(db: DB) {
+  try {
+    const version = getCurrentDbVersion(db);
+    return version == latestVersion;
+  }
+  catch (exception) {
+    return false;
+  }
 }
 
 export interface DbSignal {
@@ -146,4 +162,23 @@ export function getChannelIdByName(db: DB, name: string): number {
   query.finalize();
 
   return (result?.[0]?.[0] as any) ?? 0;
+}
+
+export function createChannel(db: DB, name: string) {
+  const cmd = db.prepareQuery<any, any, any>(`INSERT INTO channels(name) VALUES (:name)`);
+
+  cmd.execute({ name });
+  cmd.finalize();
+
+  return db.lastInsertRowId;
+}
+
+export function getOrCreateChannelId(db: DB, name: string): number {
+  const existingChannel = getChannelIdByName(db, name);
+
+  if (existingChannel == 0) {
+    return createChannel(db, name);
+  }
+
+  return existingChannel;
 }

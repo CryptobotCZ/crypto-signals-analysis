@@ -2,7 +2,7 @@ import yargs from 'https://deno.land/x/yargs/deno.ts'
 import { Arguments } from 'https://deno.land/x/yargs/deno-types.ts'
 
 import { up } from './src/migrations/01-create-db.ts';
-import { db, getDatabaseFromPath } from "./src/database.ts";
+import { getDatabaseFromPath } from "./src/database.ts";
 import { parse } from './src/commands/parse.ts';
 import { importData } from "./src/commands/import.ts";
 import { exportFromSource } from './src/commands/export.ts';
@@ -36,14 +36,13 @@ yargs(Deno.args)
   .command('init', 'initialize database', (yargs: any) => {
     addDbArg(yargs);
   }, async (argv: Arguments) => {
-    console.log(argv);
-    const db = getDatabaseFromPath(argv.database);
+    const db = await getDatabaseFromPath(argv.database);
     await up(db);
   })
   .command('verify', 'verify database', (yargs: any) => {
     addDbArg(yargs);
-  }, (argv: Arguments) => {
-      const db = getDatabaseFromPath(argv.database);
+  }, async (argv: Arguments) => {
+      const db = await getDatabaseFromPath(argv.database);
 
       const query = db.prepareQuery('SELECT * FROM db_version');
       const result = query.all();
