@@ -26,6 +26,7 @@ function getDecimalSeparator(locale: string) {
     ?.value;
 }
 
+
 export async function exportFromDb() {}
 
 export async function exportFromSource(inputFiles: string[], channel: string, destination: string, anonymize: boolean = false, config: ExportConfig = defaultConfig) {
@@ -93,6 +94,8 @@ export async function doExport(orderDetails: OrderDetail[], path: string, anonym
           order.stopLoss,
         ];
 
+        const potentialProfitValues = fillMissingValuesWithDefault(getTPPotentialProfit(x.order), maxStats.maxCountTP);
+
         return [
           (order as any).signalId,
           order.date.toLocaleDateString(config.locale, options as any),
@@ -107,24 +110,18 @@ export async function doExport(orderDetails: OrderDetail[], path: string, anonym
           x.order.pnl,
           x.order.closed ? 'closed' : 'open',
           ...(anonymize ? [] : sensitiveData),
-          ...fillMissingValuesWithDefault(getTPPotentialProfit(x.order), maxStats.maxCountTP),
+          ...potentialProfitValues,
           getPotentialLoss(x.order),
         ].map((x, idx) => {
-          if (idx > 0 && typeof x === 'number') {
-            const formattedNumber = intl.format(x);
+          const val = idx > 0 && typeof x === 'number'
+            ? intl.format(x)
+            : x;
 
-            if (config.delimiter === decimalSeparator) {
-              return `"${formattedNumber}"`;
-            } else {
-              return formattedNumber;
-            }
+          if (val?.toString()?.includes(config.delimiter)) {
+            return `"${val}"`;
           }
 
-          if (x?.toString()?.includes(config.delimiter)) {
-            return `"${x}"`;
-          }
-
-            return x;
+            return val;
         });
       });
 

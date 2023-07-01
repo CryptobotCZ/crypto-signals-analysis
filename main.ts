@@ -95,11 +95,16 @@ yargs(Deno.args)
     addInputFilesArg(yargs);
 
     yargs.option('anonymize');
-    yargs.option('locale');
+    yargs.option('locale', {
+      type: 'string'
+    });
+    yargs.option('delimiter', {
+      type: 'string'
+    });
 
     addSignalsArgs(yargs);
   }, async (argv: Arguments) => {
-    const config = { locale: argv.locale ?? 'en-UK' };
+    const config = { locale: argv.locale ?? 'en-UK', delimiter: argv.delimiter ?? ',' };
     await exportFromSource(argv.inputFiles, argv.signals, argv.outputPath, argv.anonymize, config);
   })
   .strictCommands()
