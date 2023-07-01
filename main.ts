@@ -69,7 +69,7 @@ yargs(Deno.args)
     addDbArg(yargs);
     addSignalsArgs(yargs);
   }, async (argv: Arguments) => {
-      const db = getDatabaseFromPath(argv.database);
+      const db = await getDatabaseFromPath(argv.database);
       await importData(argv.inputFiles, argv.signals, db);
   })
   .command('export <signals> <outputPath>', 'Export signals from DB to CSV', (yargs: any) => {
