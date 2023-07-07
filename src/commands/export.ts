@@ -36,7 +36,9 @@ export async function exportFromSource(inputFiles: string[], channel: string, de
 }
 
 export async function doExport(orderDetails: OrderDetail[], path: string, anonymize: boolean = false, config: ExportConfig = defaultConfig) {
-    const intl = new Intl.NumberFormat(config.locale);
+    const intl = new Intl.NumberFormat(config.locale, {
+      useGrouping: false
+    });
     const decimalSeparator = config.decimalSeparator ?? getDecimalSeparator(config.locale);
 
     const orderDetailsWithoutSpot = orderDetails.filter(x => x.order.type !== 'spotOrder');
