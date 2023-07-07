@@ -3,6 +3,7 @@ import { match } from "https://deno.land/x/fuzzy_octo_guacamole@v3.0.0/mod.ts";
 import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 import * as fs from "https://deno.land/std@0.192.0/fs/mod.ts";
 
+import { getAllMessages as getGenericMessages } from "../generic.ts";
 import { getAllMessages as getAltSignalsMessages } from "../altsignals.ts";
 import { getAllMessages as getBKChannelMessages } from "../binance-killers-channel.ts";
 import { getAllMessages as getBKCornixMessages } from "../binance-killers-cornix.ts";
@@ -60,6 +61,7 @@ export async function parse(directory: string[], group: string) {
         .with('bk-cornix', () => getBKCornixMessages)
         .with('altsignals', () => getAltSignalsMessages)
         .with('bitsturtle', () => getBitsturtleMessages)
+        .with('generic', () => getGenericMessages)
         .with(_, () => { throw new Error('Invalid group'); })
         .exhaustive();
 
