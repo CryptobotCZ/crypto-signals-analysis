@@ -29,11 +29,18 @@ groupRelatedSignals,
 getOrderSignals,
 getOrderSignalInfoFull,
 mapSLToOrder,
+parseOrderText,
 } from "./parser.ts";
 
-export function parseOrder(messageDiv: HTMLElement): Partial<Order> | null {
+export function parseOrderString(message: string): Partial<Order> | null {
     const pattern = /COIN: \$?(?<coin>.+)Direction: (?<direction>.+)Exchange: (?<exchange>.+)Leverage: (?<leverage>.+)ENTRY: (?<entry>.+)TARGETS: (?<targets>.+)STOP LOSS: (?<sl>.+)/g;
-    return baseParseOrder(messageDiv, pattern);
+
+    return parseOrderText(message, pattern);
+}
+
+export function parseOrder(messageDiv: HTMLElement): Partial<Order> | null {
+    const text = messageDiv.innerText ?? '';
+    return parseOrderString(text);
 }
 
 export function parseOrder2(messageDiv: HTMLElement): Partial<Order> | null {

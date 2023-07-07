@@ -1,5 +1,5 @@
-import { assertEquals, assertNotEquals } from "https://deno.land/std@0.188.0/testing/asserts.ts";
-import { parseOrderString } from "./altsignals.ts";
+import { assertNotEquals } from "https://deno.land/std@0.188.0/testing/asserts.ts";
+import { parseOrderString } from "./binance-killers-cornix.ts";
 
 Deno.test(function parseOrderStringHandlesAllFormats() {
     const strings = [

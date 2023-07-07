@@ -1,5 +1,42 @@
 import { assertEquals, assertNotEquals } from "https://deno.land/std@0.188.0/testing/asserts.ts";
-import { parseOrderText } from "./binance-killers-channel.ts";
+import { parseOrderText, parseTPString } from "./binance-killers-channel.ts";
+
+Deno.test(function parseTpHandlesAllFormats() {
+  const strings = [
+    '📍SIGNAL ID: #0980📍\nCOIN: $ETH/USDT (5-10x)\nDirection: SHORT📉\n➖➖➖➖➖➖➖\nShort Term Target 1: 1,880✅\nShort Term Target 2: 1,850✅\nShort Term Target 3: 1,810✅\n\n🔥47.1% Profit (10x)🔥\n\nVIP EXCLUSIVE: 3 targets destroyed just as expected, profits taken and stops moved to entries.\n➖➖➖➖➖➖➖\n- Binance Killers®',
+    '📍SIGNAL ID: #1035📍\nCOIN: $INJ/USDT (3-5x)\nDirection: LONG📈\n➖➖➖➖➖➖➖\nTarget 1: 5.82✅\nTarget 2: 5.93✅\nTarget 3: 6.07✅\nTarget 4: 6.20✅\nTarget 5: 6.35✅\nTarget 6: 6.60✅\n\n🔥98.2% Profit (5x)🔥\n\nJust as expected!!🚀😘\n➖➖➖➖➖➖➖\n- Binance Killers®',
+    '📍SIGNAL ID: #1047📍\nCOIN: $LTC/USDT (3-5x)\nDirection: SHORT\n➖➖➖➖➖➖➖\nTarget 1: 90✅\nTarget 2: 88.7✅\nTarget 3: 86.5✅\n\n🔥52.9% Profit (5x)🔥\n\nAnother quick win Killers!! Profits taken and stops moved to entries\n➖➖➖➖➖➖➖\n- Binance Killers®',
+    '📍SIGNAL ID: #1019📍\nCOIN: $BTC/USDT (3-5x)\nDirection: LONG📈\n➖➖➖➖➖➖➖\nTarget 1: 25900✅\nTarget 2: 26300✅\nTarget 3: 27000✅\nTarget 4: 27500✅\nTarget 5: 28000✅\nTarget 6: 28700✅\nTarget 7: 29600✅\nTarget 8: 30000✅\nTarget 9: 31000✅\n\n🔥121.8% Profit (5x)🔥\n\nAll targets blown up, that’s what we call a Killer move!!🔥🔥\n➖➖➖➖➖➖➖\n- Binance Killers®',
+//    '📍SIGNAL ID: #0700📍COIN: $ICP/USDT (1-3x)Direction: LONG📈➖➖➖➖➖➖➖Target 1: 5.95✅Target 2: 6.15✅Target 3: 6.40✅Target 4: 6.75✅Target 5: 7.50✅Target 6: 8.70✅High Reached: 9.80✅🔥302.3% Profit (3x)🔥'
+  ];
+
+  strings.forEach(string => assertNotEquals(parseTPString(string), null, `Failed to match ${string}`));
+});
+
+Deno.test(function parseTpReturnsCorrectResults() {
+  const strings= [
+    {
+        text:     '📍SIGNAL ID: #0980📍\nCOIN: $ETH/USDT (5-10x)\nDirection: SHORT📉\n➖➖➖➖➖➖➖\nShort Term Target 1: 1,880✅\nShort Term Target 2: 1,850✅\nShort Term Target 3: 1,810✅\n\n🔥47.1% Profit (10x)🔥\n\nVIP EXCLUSIVE: 3 targets destroyed just as expected, profits taken and stops moved to entries.\n➖➖➖➖➖➖➖\n- Binance Killers®',
+        expected: {},
+    },
+    {
+        text:     '📍SIGNAL ID: #1035📍\nCOIN: $INJ/USDT (3-5x)\nDirection: LONG📈\n➖➖➖➖➖➖➖\nTarget 1: 5.82✅\nTarget 2: 5.93✅\nTarget 3: 6.07✅\nTarget 4: 6.20✅\nTarget 5: 6.35✅\nTarget 6: 6.60✅\n\n🔥98.2% Profit (5x)🔥\n\nJust as expected!!🚀😘\n➖➖➖➖➖➖➖\n- Binance Killers®',
+        expected: {},
+
+    },
+    {
+        text:     '📍SIGNAL ID: #1047📍\nCOIN: $LTC/USDT (3-5x)\nDirection: SHORT\n➖➖➖➖➖➖➖\nTarget 1: 90✅\nTarget 2: 88.7✅\nTarget 3: 86.5✅\n\n🔥52.9% Profit (5x)🔥\n\nAnother quick win Killers!! Profits taken and stops moved to entries\n➖➖➖➖➖➖➖\n- Binance Killers®',
+        expected: {},
+    },
+    {
+      text:     '📍SIGNAL ID: #1019📍\nCOIN: $BTC/USDT (3-5x)\nDirection: LONG📈\n➖➖➖➖➖➖➖\nTarget 1: 25900✅\nTarget 2: 26300✅\nTarget 3: 27000✅\nTarget 4: 27500✅\nTarget 5: 28000✅\nTarget 6: 28700✅\nTarget 7: 29600✅\nTarget 8: 30000✅\nTarget 9: 31000✅\n\n🔥121.8% Profit (5x)🔥\n\nAll targets blown up, that’s what we call a Killer move!!🔥🔥\n➖➖➖➖➖➖➖\n- Binance Killers®',
+      expected: {},
+    }
+  ];
+
+  strings.forEach(x => assertEquals(parseTPString(x.text) as any, x.expected, `Failed to match ${x.text}`));
+});
+
 
 Deno.test(function parseOrderStringHandlesAllFormats() {
     const strings = [
