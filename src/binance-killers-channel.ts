@@ -23,6 +23,7 @@ import {
     Message,
     parseMessagePipeline,
     PartialParser,
+    InfoMessage,
 } from "./parser.ts";
 
 export interface BKOrder extends Order {
@@ -174,6 +175,20 @@ export function parseTPAll(messageDiv: HTMLElement): Partial<TakeProfitAll> | nu
     return baseParseTPAll(messageDiv, pattern);
 }
 
+export function parseInfoMessage(messageDiv: HTMLElement): Partial<InfoMessage> | null {
+    const pattern = /DOMINANCE UPDATE|MARKET CAP UPDATE|VIP NEWS UPDATE|VIP Crypto Market RSI|VIP CRYPTO MARKET|DAILY SENTIMENT ANALYSIS|IMPORTANT|TOP GAINER ANALYSIS|VIP MARKET UPDATE|TOP GAINER ANALYSIS|TRADING TIP OF THE DAY|MARKET ANALYSIS/gm;
+    const matches = pattern.exec(messageDiv.innerText);
+
+    if (matches) {
+        return {
+            type: 'info',
+            text: messageDiv.innerText
+        };
+    }
+
+    return null;
+}
+
 export function parseMessage(messageDiv: HTMLElement): Message {
     const pipeline: PartialParser[] = [
         parseOrder,
@@ -188,6 +203,7 @@ export function parseMessage(messageDiv: HTMLElement): Message {
         parseTPAll,
         parseCancelled,
         parseTPWithoutProfit,
+        parseInfoMessage,
     ];
 
     return parseMessagePipeline(messageDiv, pipeline);

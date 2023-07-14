@@ -32,6 +32,7 @@ export interface TakeProfitAll extends GenericMessage {type: 'TPAll'; coin: stri
 
 export interface SignalUpdate extends GenericMessage { type: 'update', text: string }
 
+export interface InfoMessage extends GenericMessage { type: 'info', text: string }
 export interface UnknownMessage extends GenericMessage { type: 'unknown', text: string }
 
 export interface OrderDetail {
@@ -43,7 +44,7 @@ export interface OrderDetail {
 
 
 export type Message = Order | Entry | EntryAll | Close | Cancel | Opposite | SLAfterTP | StopLoss | TakeProfit
-    | TakeProfitAll | UnknownMessage | SignalUpdate;
+    | TakeProfitAll | UnknownMessage | InfoMessage | SignalUpdate;
 
 export type PartialParser = (message: HTMLElement) => Partial<Message>|null;
 export type Parser = (message: HTMLElement) => Message;
