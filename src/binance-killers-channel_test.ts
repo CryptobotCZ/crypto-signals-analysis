@@ -8,7 +8,7 @@ Deno.test(function parseTpHandlesAllFormats() {
     '📍SIGNAL ID: #1047📍\nCOIN: $LTC/USDT (3-5x)\nDirection: SHORT\n➖➖➖➖➖➖➖\nTarget 1: 90✅\nTarget 2: 88.7✅\nTarget 3: 86.5✅\n\n🔥52.9% Profit (5x)🔥\n\nAnother quick win Killers!! Profits taken and stops moved to entries\n➖➖➖➖➖➖➖\n- Binance Killers®',
     '📍SIGNAL ID: #1019📍\nCOIN: $BTC/USDT (3-5x)\nDirection: LONG📈\n➖➖➖➖➖➖➖\nTarget 1: 25900✅\nTarget 2: 26300✅\nTarget 3: 27000✅\nTarget 4: 27500✅\nTarget 5: 28000✅\nTarget 6: 28700✅\nTarget 7: 29600✅\nTarget 8: 30000✅\nTarget 9: 31000✅\n\n🔥121.8% Profit (5x)🔥\n\nAll targets blown up, that’s what we call a Killer move!!🔥🔥\n➖➖➖➖➖➖➖\n- Binance Killers®',
 //    '📍SIGNAL ID: #0700📍COIN: $ICP/USDT (1-3x)Direction: LONG📈➖➖➖➖➖➖➖Target 1: 5.95✅Target 2: 6.15✅Target 3: 6.40✅Target 4: 6.75✅Target 5: 7.50✅Target 6: 8.70✅High Reached: 9.80✅🔥302.3% Profit (3x)🔥'
-  ];
+];
 
   strings.forEach(string => assertNotEquals(parseTPString(string), null, `Failed to match ${string}`));
 });

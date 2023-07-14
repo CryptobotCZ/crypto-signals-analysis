@@ -30,25 +30,60 @@ getOrderSignals,
 getOrderSignalInfoFull,
 mapSLToOrder,
 parseOrderText,
+cleanAndParseFloat,
 } from "./parser.ts";
 
 export function parseOrderString(message: string): Partial<Order> | null {
-    const pattern = /(?<coin>.+) (?<direction>.+)\n?Leverage: (?<leverage>.+)\n?Entry: (?<entry>[\d\.,]+)\n?(?<targets>Target \d+: .+)\n?Stoploss: (?<sl>.+)/mg;
-    const matches = pattern.exec(message);
+    return parseOrderString01(message) ?? parseOrderString02(message) ?? parseOrderString03(message);
+}
 
-    if (!matches) {
+export function parseOrderString01(message: string): Partial<Order> | null {
+    const pattern = /(?<coin>.+) (?<direction>.+)\n?Leverage: (?<leverage>.+)\n?Entry: (?<entry>[\d\.,]+)\n?(?<targets>Target \d+: .+)\n?Stoploss: (?<sl>.+)/mg;
+    const match = pattern.exec(message);
+
+    if (!match) {
         return null;
     }
 
-    const data = matches.groups;
-
-    const targets = matches.groups?.targets ?? '';
+    const targetsStr = match.groups?.targets ?? '';
     const targetSubpattern = /Target (?<target>\d+): (?<targetValue>[\d\.,]+)?/g;
-    const targetMatches = [ ... targets.matchAll(targetSubpattern) ].map((x, idx) => ({
+    const targetMatches = [ ... targetsStr.matchAll(targetSubpattern) ].map((x, idx) => ({
         tp: idx + 1, // parseInt(x.groups?.target ?? ''),
-        value: x.groups?.targetValue
+        value: cleanAndParseFloat(x.groups?.targetValue ?? '')
     }));
 
+    const targets = targetMatches.map(x => x.value);
+
+    const coin = match.groups?.coin ?? match[1];
+    const direction = (match.groups?.direction ?? match[2]).toUpperCase();
+    const exchange = (match.groups?.exchange ?? match[3]);
+    const leverageStr = match.groups?.leverage ?? match[4];
+    const leverage = parseInt(leverageStr?.split(' ')?.[1]?.replace('x', ''));
+    const entry = (match.groups?.entry ?? match[5]).trim().split(" - ").map(x => cleanAndParseFloat(x));
+    const stopLoss = cleanAndParseFloat(match.groups?.sl ?? match[7]);
+
+    const parsedMessage = {
+      type: 'order' as any,
+      coin: coin,
+      direction: direction,
+      exchange: exchange,
+      leverage: leverage,
+      entry: entry,
+      targets: targets,
+      stopLoss: stopLoss,
+    };
+
+    return parsedMessage;
+}
+
+export function parseOrderString02(message: string): Partial<Order> | null {
+    const pattern = /(?<exchange>.+)Pair: (?<coin>.+) (?<direction>.+)\n?Leverage: (?<leverage>.+)\n?Entry: (?<entry>[\d\.,]+)\n?Targets: (?<targets>.+)\n?SL: (?<sl>.+)/mg;
+
+    return parseOrderText(message, pattern);
+}
+
+export function parseOrderString03(message: string): Partial<Order> | null {
+    const pattern = /(?<coin>.+) (?<direction>.+)\n?Leverage: (?<leverage>.+)\n?Entry: (?<entry>[\d\.,]+)\n?Targets: (?<targets>.+)\n?SL: (?<sl>[\d\.,]+)/mg;
 
     return parseOrderText(message, pattern);
 }

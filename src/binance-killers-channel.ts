@@ -131,12 +131,12 @@ export function parseTPString(message: string): Partial<TakeProfit> | null {
         return null;
     }
 
-    console.log( { message } );
+//    console.log( { message } );
     const pattern = /SIGNAL ID: #?(?<signalId>\d+).*COIN: \$?(?<coin>[^ ]+) \((?<leverageRange>[^\)]+x)\)\n?Direction: (?<direction>LONG|SHORT)[📉📈\n➖]*(?<targets>((?:(Short|Mid) Term )?Target \d+: ([\d,\.]+)?✅\n?)*)\n*🔥(?<profit>[\d,.%]+) Profit \((?<leverage>\d+)x(?: leverage)?\)/gum
 
     const matches = pattern.exec(message);
 
-    console.log(matches);
+//  console.log(matches);
 
     if (!matches) {
         return null;

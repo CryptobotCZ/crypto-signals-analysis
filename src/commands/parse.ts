@@ -8,7 +8,7 @@ import { getAllMessages as getAltSignalsMessages } from "../altsignals.ts";
 import { getAllMessages as getBKChannelMessages } from "../binance-killers-channel.ts";
 import { getAllMessages as getBKCornixMessages } from "../binance-killers-cornix.ts";
 import { getAllMessages as getBitsturtleMessages, getOrderSignalInfoFull as getBitsTurtleOrderSignalInfoFull } from "../bitsturtle.ts";
-import { OrderDetail, StopLoss, getOrderSignalInfoFull, getOrderSignals, groupRelatedSignals, mapSLToOrder } from "../parser.ts";
+import { OrderDetail, StopLoss, getOrderSignalInfoFull, getOrderSignals, groupRelatedSignals, mapSLToOrder, TakeProfitAll } from "../parser.ts";
 
 export async function parseFile<T>(path: string, parser: () => T[]) {
     const fileContent = await Deno.readTextFile(path);
@@ -68,6 +68,19 @@ export async function parse(directory: string[], group: string) {
     const messages = await parseAll(directory, parser);
     messages.sort((a,b) => (a.date as any) - (b.date as any));
 
+    const messageStats = messages.reduce((agg: any, x) => {
+      if (!Object.hasOwn(agg, x.type)) {
+        agg[x.type] = 0;
+      }
+
+      agg[x.type]++;
+
+      return agg;
+    }, {});
+
+    console.info('Parsed messages statistics: ');
+    console.info(JSON.stringify({ messageStats }));
+
     const unknownMessages = messages.filter(x => x.type === 'unknown');
     const slSignals = messages.filter(x => x.type == 'SL') as StopLoss[];
 
@@ -77,31 +90,19 @@ export async function parse(directory: string[], group: string) {
 
     const ordersWithoutTp = orderSignals.filter(x => x.other.length == 0);
 
-    // const recentMessages = messages.filter(x => x.date >= new Date(2023, 5, 10));
-    // const groupedRecentSignals = groupRelatedSignals(recentMessages);
-    // const recentOrderSignals = getOrderSignals(recentMessages).map(x => getOrderInfo(x, groupedRecentSignals)) as OrderDetail[];
-
-
     slSignals.forEach(x => mapSLToOrder(x, orderSignals, groupedSignals, messages));
 
-    const binanceFuturesSignals = orderSignals.filter(x => x.order?.exchange == "Binance Futures");
-    const binanceFuturesProfitable = binanceFuturesSignals.filter(x => x.tps.length > 1);
+    const sumTpAllPcts = messages.filter(x => x.type == 'TPAll').reduce((x, y) => (y as TakeProfitAll).pct + x, 0);
+    const sumpSlPcts = slSignals.reduce((x, y) => Math.abs(y?.pct ?? 0) + x, 0);
+    const totalPcts = sumTpAllPcts - sumpSlPcts;
+    const averagePnlPerOrder = totalPcts / orderSignals.length;
 
-    const sumTpPcts = binanceFuturesProfitable.reduce((sum, x) => sum + x.tps[x.tps.length - 1].pct, 0);
-    const avgTpPcts =  sumTpPcts / binanceFuturesProfitable.length;
-
-   const messageStats = messages.reduce((agg: any, x) => {
-        if (!Object.hasOwn(agg, x.type)) {
-          agg[x.type] = 0;
-        }
-
-        agg[x.type]++;
-
-        return agg;
-      }, {});
-
-    console.info('Parsed messages statistics: ');
-    console.info({ messageStats });
+    console.log({
+      sumTpAllPcts: sumTpAllPcts.toFixed(2),
+      sumpSlPcts: sumpSlPcts.toFixed(2),
+      totalPcts: totalPcts.toFixed(2),
+      averagePnlPerOrder: averagePnlPerOrder.toFixed(2)
+    });
 
     return { messages, orderSignals, groupedSignals };
 }
