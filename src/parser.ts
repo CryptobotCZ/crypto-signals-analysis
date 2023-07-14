@@ -51,6 +51,10 @@ export type Parser = (message: HTMLElement) => Message;
 export type OrderGrouping = { order: OrderDetail, key: string };
 export type GroupedSignals = {[key: string]: Message[] };
 
+export function cleanAndParseFloat(text: string) {
+    return parseFloat(text?.trim()?.replace(",", ""));
+}
+
 export function parseDate(dateString: string) {
     const parts = dateString.split(" ");
     const dateParts = parts[0].split(".");
@@ -517,11 +521,16 @@ export function parseTPAll(messageDiv: HTMLElement, pattern: RegExp): Partial<Ta
 export function getOrderSignalInfoFull(signal: Message, groupedSignals: { [key: string]: Message[] }): Partial<OrderDetail> {
     const relatedSignals = groupedSignals[signal.messageId];
 
-    const order = relatedSignals.find(x => x.type == 'order' || x.type == 'spotOrder') as Order; //  relatedSignals.find(x => x.type == 'order' && x.exchange == 'Binance Futures');
-    const entries = relatedSignals.filter(x => x.type === 'entry') as Entry[]; // relatedSignals.filter(x => x.type === 'entry' && x.exchange == 'Binance Futures');
+    const order = relatedSignals.find(x => x.type == 'order' || x.type == 'spotOrder') as Order;
+    const entries = relatedSignals.filter(x => x.type === 'entry') as Entry[];
+    const entryAll = relatedSignals.filter(x => x.type === 'entryAll') as EntryAll[];
     const tps = relatedSignals.filter(x => x.type == 'TP') as TakeProfit[];
+    const tpAll = relatedSignals.filter(x => x.type === 'TPAll') as TakeProfitAll[];
     const sl = relatedSignals.filter(x => x.type == 'SL') as StopLoss[];
-    const other = relatedSignals.filter(x => x.type !== 'spotOrder' && x.type !== 'order' && x.type !== 'entry' && x.type !== 'TP' && x.type !== 'SL');
+    const slTp = relatedSignals.filter(x => x.type === 'SLTP') as SLAfterTP[];
+    const close = relatedSignals.filter(x => x.type === 'close') as Close[];
+
+    const other = relatedSignals.filter(x => (['spotOrder', 'order' , 'entry', 'entryAll', 'TP', 'TPAll', 'SL', 'SLTP' ] as typeof x.type[]).indexOf(x.type) === -1);
 
     if (order == null) {
         return {
@@ -539,11 +548,19 @@ export function getOrderSignalInfoFull(signal: Message, groupedSignals: { [key: 
         order.entry.sort((a,b) => a - b);
     }
 
-    const avgEntryPrice = entries.map(x => x.price).reduce((sum, entry) => entry + sum, 0) / Math.max(entries.length, 1);
+    const avgEntryPrice = entryAll.length != 0
+        ? entryAll[0].price
+        : entries.map(x => x.price).reduce((sum, entry) => entry + sum, 0) / Math.max(entries.length, 1);
 
-    const maxReachedEntry = Math.max(...entries.map(x => x.entry).concat([0]));
+    const maxReachedEntry = entryAll.length != 0
+        ? order.entry.length
+        : Math.max(...entries.map(x => x.entry).concat([0]));
+
     const tpsAsInt = tps.map(x => x.tp);
-    const maxReachedTp = Math.max(...tpsAsInt.concat([0]));
+
+    const maxReachedTp = tpAll.length != 0
+        ? order.targets.length
+        : Math.max(...tpsAsInt.concat([0]));
 
     const lev = order.leverage ?? 1;
 
@@ -556,17 +573,20 @@ export function getOrderSignalInfoFull(signal: Message, groupedSignals: { [key: 
 
     const sumLossPct = Math.abs((order.stopLoss ?? 0) - avgEntryPrice) / avgEntryPrice * lev * 100;
 
-    const pnl = tps.length === 0 && sl.length > 0
+    const pnl = maxReachedTp === 0 && sl.length > 0
         ? -sumLossPct
         : sumProfitPct;
 
-    const closed = tps.length === order.targets.length || sl.length > 0;
+    const closed = maxReachedTp === order.targets.length || sl.length > 0 || close.length > 0 || slTp.length > 0;
 
     const data = {
         order,
         entries,
+        entryAll,
         tps,
         sl,
+        slTp,
+        close,
         other,
         maxReachedEntry,
         maxReachedTp,
