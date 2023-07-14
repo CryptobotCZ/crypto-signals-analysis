@@ -1,10 +1,11 @@
 import { OrderDetail, getPotentialLoss, getTPPotentialProfit, groupRelatedOrders } from "../parser.ts";
 import { parse } from "./parse.ts";
+import { Order as CornixOrder } from "../order.ts";
 
 export interface ExportConfig {
   locale: string;
   delimiter: string;
-  decimalSeparator: string;
+  decimalSeparator?: string;
 }
 
 const defaultConfig: ExportConfig = {
@@ -29,13 +30,61 @@ function getDecimalSeparator(locale: string) {
 
 export async function exportFromDb() {}
 
-export async function exportFromSource(inputFiles: string[], channel: string, destination: string, anonymize: boolean = false, config: ExportConfig = defaultConfig) {
-  const parsedData = await parse(inputFiles, channel);
-
-  await doExport(parsedData.orderSignals, destination, anonymize, config);
+export interface ExportArguments {
+  inputFiles: string[];
+  signals: string;
+  outputPath: string;
+  anonymize: boolean;
+  format?: 'csv' | 'order-json'
 }
 
-export async function doExport(orderDetails: OrderDetail[], path: string, anonymize: boolean = false, config: ExportConfig = defaultConfig) {
+export async function exportFromSource(argv: ExportArguments, config: ExportConfig = defaultConfig) {
+  const { inputFiles, signals, outputPath, anonymize } = argv;
+  const parsedData = await parse(inputFiles, signals);
+
+  await doExport(parsedData.orderSignals, outputPath, anonymize, argv.format, config);
+}
+
+export async function doExport(orderDetails: OrderDetail[], path: string, anonymize: boolean = false, format: string = 'csv', config: ExportConfig = defaultConfig) {
+  if (format === 'csv') {
+    return await exportCsv(orderDetails, path, anonymize, config);
+  } else if (format === 'order-json') {
+    return await exportJson(orderDetails, path);
+  } else {
+    throw new Error('Invalid export format');
+  }
+}
+
+// amount?: number;
+// coin: string;
+// leverage?: number;
+// exchange?: string;
+// date: Date;
+// timestamp: number;
+// entries: number[];
+// tps: number[];
+// sl: number;
+// direction?: 'SHORT' | 'LONG';
+
+async function exportJson(orderDetails: OrderDetail[], path: string) {
+  const ordersForExport: CornixOrder[] = orderDetails.map(order => {
+    return {
+      coin: order.order.coin,
+      direction: order.order.direction as any,
+      date: order.order.date,
+      leverage: order.order.leverage,
+      exchange: order.order.exchange,
+      entries: order.order.entry,
+      tps: order.order.targets,
+      sl: order.order.stopLoss,
+    };
+  });
+
+  const ordersAsString = JSON.stringify(ordersForExport);
+  await Deno.writeTextFileSync(path, ordersAsString);
+}
+
+async function exportCsv(orderDetails: OrderDetail[], path: string, anonymize: boolean = false, config: ExportConfig = defaultConfig) {
     const intl = new Intl.NumberFormat(config.locale, {
       useGrouping: false
     });

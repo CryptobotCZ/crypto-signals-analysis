@@ -7,11 +7,6 @@ import { parse } from './src/commands/parse.ts';
 import { importData } from "./src/commands/import.ts";
 import { exportFromSource } from './src/commands/export.ts';
 
-// Learn more at https://deno.land/manual/examples/module_metadata#concepts
-if (import.meta.main) {
-
-}
-
 const signals = [
   'altsignals', 'bitsturtle', 'bk-cornix', 'bk-group', 'generic'
 ];
@@ -41,10 +36,22 @@ const addInputFilesArg = (yargs: any) => {
 };
 
 const addOutputPathArg = (yargs: any) => {
-  yargs.positional('outputPath', {
+  yargs.option('outputPath', {
     describe: 'Exported .csv file path',
     type: 'string'
   });
+};
+
+const addExportOutputFormatArg = (yargs: any) => {
+  const exportFormats = ['csv', 'order-json'];
+  
+  yargs.option('format', {
+    describe: 'Export format',
+    type: 'string',
+    default: 'order-json'
+  });
+
+  yargs.choices('format', exportFormats);
 };
 
 yargs(Deno.args)
@@ -90,9 +97,10 @@ yargs(Deno.args)
   }, (argv: Arguments) => {
     console.log('Currently not implemented');
   })
-  .command('export-from-source <outputPath> <inputFiles...>', 'Export signals from source to CSV', (yargs: any) => {
+  .command('export-from-source <inputFiles...>', 'Export signals from source', (yargs: any) => {
     addOutputPathArg(yargs);
     addInputFilesArg(yargs);
+    addExportOutputFormatArg(yargs);
 
     yargs.option('anonymize');
     yargs.option('locale', {
@@ -105,7 +113,7 @@ yargs(Deno.args)
     addSignalsArgs(yargs);
   }, async (argv: Arguments) => {
     const config = { locale: argv.locale ?? 'en-UK', delimiter: argv.delimiter ?? ',' };
-    await exportFromSource(argv.inputFiles, argv.signals, argv.outputPath, argv.anonymize, config);
+    await exportFromSource(argv as any, config);
   })
   .strictCommands()
   .demandCommand(1)
