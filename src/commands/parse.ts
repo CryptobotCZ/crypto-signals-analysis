@@ -8,6 +8,8 @@ import { getAllMessages as getAltSignalsMessages } from "../altsignals.ts";
 import { getAllMessages as getBKChannelMessages } from "../binance-killers-channel.ts";
 import { getAllMessages as getBKCornixMessages } from "../binance-killers-cornix.ts";
 import { getAllMessages as getBitsturtleMessages, getOrderSignalInfoFull as getBitsTurtleOrderSignalInfoFull } from "../bitsturtle.ts";
+import { getAllMessages as getWallstreetQueenMessages } from "../wallstreet_queen.ts";
+
 import { OrderDetail, StopLoss, getOrderSignalInfoFull, getOrderSignals, groupRelatedSignals, mapSLToOrder, TakeProfitAll } from "../parser.ts";
 
 export async function parseFile<T>(path: string, parser: () => T[]) {
@@ -61,6 +63,7 @@ export async function parse(directory: string[], group: string) {
         .with('bk-cornix', () => getBKCornixMessages)
         .with('altsignals', () => getAltSignalsMessages)
         .with('bitsturtle', () => getBitsturtleMessages)
+        .with('wallstreet-queen', () => getWallstreetQueenMessages)
         .with('generic', () => getGenericMessages)
         .with(_, () => { throw new Error('Invalid group'); })
         .exhaustive();

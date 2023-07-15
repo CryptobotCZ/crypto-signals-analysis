@@ -8,7 +8,7 @@ import { importData } from "./src/commands/import.ts";
 import { exportFromSource } from './src/commands/export.ts';
 
 const signals = [
-  'altsignals', 'bitsturtle', 'bk-cornix', 'bk-group', 'generic'
+  'altsignals', 'bitsturtle', 'bk-cornix', 'bk-group', 'generic', 'wallstreet-queen'
 ];
 
 const addSignalsArgs = (yargs: any) => {
@@ -44,7 +44,7 @@ const addOutputPathArg = (yargs: any) => {
 
 const addExportOutputFormatArg = (yargs: any) => {
   const exportFormats = ['csv', 'order-json'];
-  
+
   yargs.option('format', {
     describe: 'Export format',
     type: 'string',
