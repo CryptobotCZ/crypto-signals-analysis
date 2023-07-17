@@ -78,3 +78,42 @@ ByBit USDT
 #BTC/USDT Stoploss ⛔️
 Loss: 133.3% 📉
 ```
+
+## How to contribute
+
+### Adding new channel
+
+1. Export channel history from telegram
+2. Open the latest message.html file in a browser and find the order message
+3. Right click on it and select `inspect` in a browser menu
+4. Find and select `<div class="text">` in elements inspector window
+5. Open a console
+6. Write `$0.innerText` and copy the value
+7. Write a regular expression for parsing that value
+   - [Regex101](https://regex101.com) can help a lot!
+   - Make sure to have named capture groups
+   - Here is sample regex:
+       ```regexp
+      (?<coin>.+) (?<direction>.+)\n?Leverage: (?<leverage>.+)\n?Entry: (?<entry>[\d\.,]+)\n?(?<targets>Target \d+: .+)\n?Stoploss: (?<sl>.+)
+      ```
+8. Copy `generic.ts` and `generic_test.ts` and use them as a template for the new group.
+9. Update [parse.ts](./src/commands/parse.ts) file 
+   - add new import
+   - add new case into pattern matching in `parse` function
+10. Update [main.ts](./main.ts) file
+    - add new group to `signals` array
+11. Test parsing messages for new channel.
+    - you will see message like this one:
+    ```text
+    Parsed messages statistics:
+    {"messageStats":{"unknown":885,"order":159}}
+    ```
+    - if the `"order"` part is missing, there is probably something wrong with the regex
+12. Create a pull request
+
+It is not needed to make regular expressions for all channel messages, orders are the most important ones.
+If you do the work and make regular expressions for all messages, it will be highly appreciated and it will make it possible 
+ to do basic testing using this tool and it will be able to calculate the PnL based on parsed data.
+
+If only orders are parsed, using the [crypto-trade-backtracker](https://github.com/CryptobotCZ/crypto-trade-backtracker)
+ is needed to do the backtracking and calculating the PnL.
