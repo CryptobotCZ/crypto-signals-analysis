@@ -1,3 +1,5 @@
+import { writeJson } from "https://deno.land/x/jsonfile/mod.ts";
+
 import { OrderDetail, getPotentialLoss, getTPPotentialProfit, groupRelatedOrders } from "../parser.ts";
 import { parse } from "./parse.ts";
 import { Order as CornixOrder } from "../order.ts";
@@ -80,8 +82,7 @@ async function exportJson(orderDetails: OrderDetail[], path: string) {
     };
   });
 
-  const ordersAsString = JSON.stringify(ordersForExport);
-  await Deno.writeTextFileSync(path, ordersAsString);
+  await writeJson(path, ordersForExport, { spaces: 2 });
 }
 
 async function exportCsv(orderDetails: OrderDetail[], path: string, anonymize: boolean = false, config: ExportConfig = defaultConfig) {
