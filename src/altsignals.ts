@@ -1,5 +1,5 @@
 import { Cancel, Close, Entry, EntryAll, Message, Opposite, Order, OrderDetail, PartialParser, SLAfterTP, SignalUpdate, StopLoss, TakeProfit, TakeProfitAll, getReferencedMessageId, parseDate } from "./parser.ts";
-import { getAllMessages as parserGetAllMessages, parseMessagePipeline } from "./parser.ts";
+import { parseMessagePipeline } from "./parser.ts";
 
 export function parseOrderUpdate(messageDiv: HTMLElement): Partial<SignalUpdate> | null {
     const pattern = /⚡/g;
@@ -14,7 +14,110 @@ export function parseOrderUpdate(messageDiv: HTMLElement): Partial<SignalUpdate>
 }
 
 export function parseOrder(messageDiv: HTMLElement): Partial<Order> | null {
-    return parseOrderString(messageDiv.innerText ?? '');
+    const text = messageDiv.innerText ?? '';
+    return parseOrderString(text) ?? parseMessageGPT(text);
+}
+
+export function parseOrderString(message: string): Partial<Order> | null {
+  const parsers = [
+    parseOrderString01,
+    parseOrderStringVariant2,
+    parseMessageGPT,
+    parseOrderStringVariant3,
+  ];
+
+  for (const parser of parsers) {
+    const result = parser(message);
+
+    if (result != null && (result?.stopLoss ?? 0) > 0) {
+      return result;
+    }
+
+    if (result != null && result?.stopLoss == 0) {
+      return result;
+    }
+  }
+
+  return null;
+}
+
+function cleanUpMessage(message: string) {
+    return message
+        .trim()
+        .replace(/(?:\r\n|\r|\n)+/g, "\n")
+        .replace(/( +)/, " ")
+        .replace(" :", ":") ?? "";
+}
+
+export function parseOrderStringVariant3(message: string): Partial<Order> | null {
+  message = cleanUpMessage(message);
+
+  const regix = /(?:Coin: )?(?<coin>[\w]+) ?\(?(?<direction>LONG|SHORT|Long|)\)?\\n?(?:Leverage ?:? ?) ?(?<leverage>[\d.]+)[xX][\\n]*(?:Entry ?: ?|Entry Targets ?: ?)\\n?(?<entries>[\)\d\.\\n ]+)\n?(?:Take-Profit Targets:|Targets? ?: ?)\n?(?<takeProfits>[\)\d\\n\., ]+)\n?(?:Stop Targets:|Stoploss ?: ?)\n?(?<sl>.+)/gmiu;
+  const regex = /(?:Coin: )?(?<coin>[\w]+) ?\(?(?<direction>LONG|SHORT|Long|)\)?\n?(?:Leverage ?:? ?) ?(?<leverage>[\d.]+)[xX][\n]*(?:Entry ?: ?|Entry Targets ?: ?)\n?(?<entries>[\)\d\.\n ]+)\n?(?:Take-Profit Targets:|Targets? ?: ?)\n?(?<takeProfits>[\)\d\n\., ]+)\n?(?:Stop Targets:|Stoploss ?: ?)\n?(?<sl>.+)/gmiu;
+
+  const match = regex.exec(message);
+  const match2 = regix.exec(message);
+
+  if (!match) {
+    return null;
+  }
+
+  const replaceNumberedList = (text: string) => {
+    const fixedText = text?.replaceAll(/\d\) /ug, " ")
+      ?.replaceAll("\n", " ")
+      ?.trim()
+      ?.replaceAll(" - ", " ")
+      ?.replaceAll(/ +/g, " ");
+
+    return fixedText?.split(" ")?.map((x) => parseFloat(x)) ??
+      [0];
+  };
+
+  const coin = match.groups?.coin;
+  const direction = match.groups?.direction?.toUpperCase();
+  const exchange = undefined;
+  const leverage = parseInt(match.groups?.leverage?.replace(".0", "") ?? "");
+  const entry = replaceNumberedList(match.groups?.entries ?? "");
+  const targets = replaceNumberedList(match.groups?.takeProfits ?? "");
+  const stopLoss = replaceNumberedList(match.groups?.sl ?? "")[0];
+
+  const parsedMessage = {
+    type: "order" as any,
+    coin: coin,
+    direction: direction,
+    exchange: exchange,
+    leverage: leverage,
+    entry: entry,
+    targets: targets,
+    stopLoss: stopLoss,
+  };
+
+  return parsedMessage;
+}
+
+export function parseMessageGPT(message: string): Partial<Order> | null {
+  const regex =
+    /Coin:?\s*([^\s]+)\s*(?:\(SHORT\)|SHORT)?\s*Leverage\s*:\s*([\w\s]+)\s*Entry\s*:\s*((?:\d+\.\d+\s*-\s*\d+\.\d+|\d+\.\d+))[^:]+:\s*((?:\d+\.\d+\s*-?\s*)+)\s*Stoploss\s*:\s*([\d.]+)/;
+  const match = message.match(regex);
+
+  if (!match) {
+    return null;
+  }
+
+  const coin = match[1];
+  const direction = match[2].trim();
+  const entry = match[3].split("-").map(Number);
+  const targets = match[4].trim().split("-").map(Number);
+  const stoploss = Number(match[5]);
+
+  return {
+    coin,
+    direction,
+    entry,
+    leverage: match[2],
+    targets,
+    sl: stoploss,
+  } as any;
 }
 
 export function parseOrderStringVariant2(message: string): Partial<Order> | null {
@@ -55,9 +158,10 @@ export function parseOrderStringVariant2(message: string): Partial<Order> | null
     return parsedMessage;
 }
 
-export function parseOrderString(message: string): Partial<Order> | null {
-      const pattern = /(?:Coin: )?(.+)  ?\(?(LONG|SHORT|Long|)\)?\n?(?:Leverage ?\:? ?) ?([\d.]+)(?:x|X)(?:Entry ?: ?|Entry Targets ?: ?)(.+)(?:Take-Profit Targets:|Targets? ?: ?)(.+)(?:Stop Targets:|Stoploss ?: ?)(.+)/i
-//    const pattern = /(.+)  ?\(?(LONG|SHORT|Long)\)?\n?(?:Leverage\:) ([\d.]+)(?:x|X)Entry Targets:(.+)Take-Profit Targets:(.+)Stop Targets:(.+)/g;
+export function parseOrderString01(message: string): Partial<Order> | null {
+    message = cleanUpMessage(message);
+
+    const pattern = /(?:Coin: )?(?<coin>.+)  ?\(?(?<direction>LONG|SHORT|Long|)\)?\n?(?:Leverage ?\:? ?) ?(?<leverage>[\d.]+)(?:x|X)(?:Entry ?: ?|Entry Targets ?: ?)(?<entries>.+)(?:Take-Profit Targets:|Targets? ?: ?)(?<takeProfits>.+)(?:Stop Targets:|Stoploss ?: ?)(?<sl>.+)/i;
     const match = pattern.exec(message.trim());
 
     if (match) {
@@ -71,13 +175,13 @@ export function parseOrderString(message: string): Partial<Order> | null {
             ?? [0];
      };
 
-      const coin = match[1];
-      const direction = match[2];
-      const exchange = match[3];
-      const leverage = parseInt(match[4].replace('x', ''));
-      const entry = replaceNumberedList(match[5]);
-      const targets = replaceNumberedList(match[6]);
-      const stopLoss = replaceNumberedList(match[7])[0];
+      const coin = match.groups?.coin;
+      const direction = match.groups?.direction;
+      const exchange = null;
+      const leverage = parseInt(match.groups?.leverage?.replace("x", "") ?? "");
+      const entry = replaceNumberedList(match.groups?.entries ?? "");
+      const targets = replaceNumberedList(match.groups?.takeProfits ?? "");
+      const stopLoss = replaceNumberedList(match.groups?.sl ?? "")[0];
 
       const parsedMessage = {
         type: 'order' as any,
@@ -190,11 +294,10 @@ export function parseEntry(messageDiv: HTMLElement): Partial<Entry> | null {
 export function parseEntryAll(messageDiv: HTMLElement): Partial<EntryAll> | null {
     const entryPattern = /(.*)\n?#(.*) All entry targets achieved\n?Average Entry Price: (\d*\.?\d*)/gm;
     const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
+    const referencedMessageId = getReferencedMessageId(messageDiv);
 
     const entryMatch = entryPattern.exec(message);
     if (entryMatch) {
-        const referencedMessageId = getReferencedMessageId(messageDiv);
-
         const coin = entryMatch[2];
         const exchange = entryMatch[1];
         const price = parseFloat(entryMatch[3].trim().replace(",", ""));
@@ -210,17 +313,23 @@ export function parseEntryAll(messageDiv: HTMLElement): Partial<EntryAll> | null
         return parsedEntry;
     }
 
+    if (messageDiv.innerText.match(/All entry targets achieved/)) {
+        return {
+            relatedTo: referencedMessageId,
+            type: "entryAll" as any,
+        };
+    }
+
     return null;
 }
-
 
 export function parseClose(messageDiv: HTMLElement): Partial<Close> | null {
     const entryPattern = /CLOSE (.*)/;
     const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
+    const referencedMessageId = getReferencedMessageId(messageDiv);
 
     const match = entryPattern.exec(message);
     if (match) {
-        const referencedMessageId = getReferencedMessageId(messageDiv);
         const coin = match[1];
 
         const parsedEntry = {
@@ -232,10 +341,39 @@ export function parseClose(messageDiv: HTMLElement): Partial<Close> | null {
         return parsedEntry;
     }
 
+    if (messageDiv.innerText.match(/Close|closing/i)) {
+        return {
+            type: "close",
+            relatedTo: referencedMessageId,
+        };
+    }
+
     return null;
 }
 
+export function parseBreakeven(messageDiv: HTMLElement): Partial<Close> | null {
+  if (messageDiv.innerText.match(/Closing at breakeven|Breakeven SL/)) {
+    const referencedMessageId = getReferencedMessageId(messageDiv);
+
+    return {
+      type: "close",
+      relatedTo: referencedMessageId,
+    };
+  }
+
+  return null;
+}
+
 export function parseCancelled(messageDiv: HTMLElement): Partial<Cancel> | null {
+    if (messageDiv.innerText.match(/Manually Cancelled/)) {
+        const referencedMessageId = getReferencedMessageId(messageDiv);
+
+        return {
+            type: "cancelled",
+            relatedTo: referencedMessageId,
+        };
+    }
+
     const entryPattern = /(.*)\n?#(.*) Cancelled ❌\n?Target achieved before entering the entry zone/;
     const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
 
@@ -306,7 +444,6 @@ export function parseSLAfterTP(messageDiv: HTMLElement): Partial<SLAfterTP> | nu
 
     return null;
 }
-
 
 export function parseSL(messageDiv: HTMLElement): Partial<StopLoss> | null {
     const pattern = /(.*)\n?#(.*) Stoploss ⛔\n?Loss: ([\d\.\%]+) 📉/gm;
@@ -494,6 +631,31 @@ export function getOrderSignalInfoFull(signal: Message, groupedSignals: { [key: 
     return data;
 }
 
+export function parseLink(messageDiv: HTMLElement): Partial<Message> | null {
+  if (messageDiv.innerText.match(/https:\/\//)) {
+    return {
+      type: "info",
+      text: messageDiv.innerText,
+    };
+  }
+
+  return null;
+}
+
+export function parseInfoMessage(
+  messageDiv: HTMLElement,
+): Partial<Message> | null {
+  if (
+    messageDiv.innerText.match(
+      /flat|scalp|correction|report|SEC|Sorry|Exactly|analysis|predicted|prediction|Morning|month|consolidating|broke|unknown|VIP|volatility|mentioned|DOMINANCE|making gains|suggested|Waited|Market|discount|pump/i,
+    )
+  ) {
+    return { type: "info", text: messageDiv.innerText };
+  }
+
+  return null;
+}
+
 export function parseMessage(messageDiv: HTMLElement): Message {
     const pipeline: PartialParser[] = [
         parseOrderUpdate,
@@ -510,7 +672,10 @@ export function parseMessage(messageDiv: HTMLElement): Message {
         parseTPAll,
         parseCancelled,
         parseTPWithoutProfit,
-    ];
+        parseLink,
+        parseInfoMessage,
+        parseBreakeven,
+  ];
 
     return parseMessagePipeline(messageDiv, pipeline);
 }
