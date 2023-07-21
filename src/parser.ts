@@ -69,12 +69,12 @@ export function parseDate(dateString: string) {
     const minute = parseInt(timeParts[1], 10);
     const second = parseInt(timeParts[2], 10);
 
-    // Construct the date object
-    const date = new Date(Date.UTC(year, month, day, hour, minute, second));
-
     // Apply the timezone offset
-    const timezoneOffset = parseInt(timezonePart, 10);
-    date.setHours(date.getHours() - timezoneOffset);
+    const timezoneOffset = 0; // offset is incorrect
+    // parseInt(timezonePart, 10);
+
+    // Construct the date object
+    const date = new Date(year, month, day, hour - timezoneOffset, minute, second);
 
     return date;
 }
