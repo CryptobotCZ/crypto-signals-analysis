@@ -71,6 +71,7 @@ export async function doExport(orderDetails: OrderDetail[], path: string, anonym
 async function exportJson(orderDetails: OrderDetail[], path: string) {
   const ordersForExport: CornixOrder[] = orderDetails.map(order => {
     return {
+      signalId: order.order.signalId ?? getOrderKey(order),
       coin: order.order.coin,
       direction: order.order.direction as any,
       date: order.order.date,
