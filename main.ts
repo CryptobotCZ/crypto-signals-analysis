@@ -116,6 +116,9 @@ yargs(Deno.args)
     const config = { locale: argv.locale ?? 'en-UK', delimiter: argv.delimiter ?? ',' };
     await exportFromSource(argv as any, config);
   })
+  .command('supported-groups', 'Shows supported groups', () => {}, () => {
+    signals.forEach(group => console.log(group));
+  })
   .strictCommands()
   .demandCommand(1)
   .version('version', '0.0.1').alias('version', 'V')
