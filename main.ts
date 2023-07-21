@@ -8,7 +8,8 @@ import { importData } from "./src/commands/import.ts";
 import { exportFromSource } from './src/commands/export.ts';
 
 const signals = [
-  'altsignals', 'bitsturtle', 'bk-cornix', 'bk-group', 'generic', 'wallstreet-queen'
+  'altsignals', 'bitsturtle', 'bk-cornix', 'bk-group', 'generic', 'wallstreet-queen',
+  'cryptokey'
 ];
 
 const addSignalsArgs = (yargs: any) => {
