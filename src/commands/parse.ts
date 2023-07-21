@@ -10,6 +10,7 @@ import { getAllMessages as getBKCornixMessages } from "../binance-killers-cornix
 import { getAllMessages as getBitsturtleMessages, getOrderSignalInfoFull as getBitsTurtleOrderSignalInfoFull } from "../bitsturtle.ts";
 import { getAllMessages as getWallstreetQueenMessages } from "../wallstreet_queen.ts";
 import { getAllMessages as getCryptokeyMessages } from "../cryptokey.ts";
+import { getAllMessages as getBinanceMasterMessages } from "../binance_master.ts";
 
 import { OrderDetail, StopLoss, getOrderSignalInfoFull, getOrderSignals, groupRelatedSignals, mapSLToOrder, TakeProfitAll } from "../parser.ts";
 
@@ -66,6 +67,7 @@ export async function parse(directory: string[], group: string) {
         .with('bitsturtle', () => getBitsturtleMessages)
         .with('wallstreet-queen', () => getWallstreetQueenMessages)
         .with('cryptokey', () => getCryptokeyMessages)
+        .with('binance-master', () => getBinanceMasterMessages)
         .with('generic', () => getGenericMessages)
         .with(_, () => { throw new Error('Invalid group'); })
         .exhaustive();
