@@ -30,12 +30,74 @@ export function parseOrderString(message: string): Partial<Order> | null {
   return parseOrderString01(message)
       ?? parseOrderString02(message)
       ?? parseOrderString03(message)
-      ?? parseOrderString04(message);
+      ?? parseOrderString04(message)
+      ?? parseOrderString05(message)
+      ?? parseOrderString06(message);
+}
+
+export function parseOrderString05(message: string): Partial<Order> | null {
+  const regex = /([\d.]+)/guim;
+  const allMatches = [...message.matchAll(regex)];
+  const matches = regex.exec(message);
+  
+  if (matches) {
+    // this is just wild guess, parse all numbers and find out meaning
+    console.log(matches);
+  }
 }
 
 export function parseOrderString04(message: string): Partial<Order> | null {
-  if (message.match(/tradingview.com/) && message.match(/leverage/i)) {
-    return null;
+  const patterns = [
+    /(?<coin>[\w\/]+)[\n\s]*(?<direction>Long|Short)[\n\s]*Leverage[^\d]*(?<leverage>\d+)x[\n\s]*Entry[\w\- ]*:\s*(?<entry>[\d., -]+)[\n\s,]*Targets?: ?(?<targets>[\d+-. ,]+)[\n\s]*SL: ?(?<sl>[\d]+)/guim,
+  ];
+
+  for (const pattern of patterns) {
+    const match = pattern.exec(message);
+
+    if (!match) {
+      continue;
+    }
+
+    const targetsStr = match.groups?.targets ?? "";
+    const targetSubpattern = /Target (?<target>\d+) : (?<targetValue>[\d\.,]+)?/g;
+    const targetMatches = [
+      ...targetsStr.matchAll(targetSubpattern)
+    ].map((x, idx) => ({
+      tp: idx + 1, // parseInt(x.groups?.target ?? ''),
+      value: cleanAndParseFloat(x.groups?.targetValue ?? ""),
+    }));
+
+    const targets = targetMatches.map((x) => x.value);
+
+    const coin = match.groups?.coin ?? match[1];
+    const direction = (match.groups?.direction ?? match[2]).toUpperCase();
+    const exchange = null;
+    const leverageStr = match.groups?.leverage ?? match[4];
+    const leverage = parseInt(leverageStr);
+    const entry = (match.groups?.entry ?? match[5]).trim().split(" - ").map((x) => cleanAndParseFloat(x));
+    const stopLoss = cleanAndParseFloat(match.groups?.sl ?? match[7]);
+
+    const parsedMessage = {
+      type: "order" as any,
+      coin: coin.trim(),
+      direction: direction,
+      exchange: exchange,
+      leverage: leverage,
+      entry: entry,
+      targets: targets,
+      stopLoss: stopLoss,
+    };
+
+    return parsedMessage;
+  }
+
+  return null;
+}
+
+export function parseOrderString06(message: string): Partial<Order> | null {
+  if (message.match(/leverage/i)) {
+    return { type: 'probablyOrder' as any, text: message } as any;
+//    return null;
   }
   
   return null;
@@ -45,6 +107,8 @@ export function parseOrderString01(message: string): Partial<Order> | null {
     const patterns = [
       /(?<coin>[\w\/]+)\n\n(?<direction>Long|Short)\n\nLeverage:(?<leverage>\d+)x\n\nEntry-above:(?<entry>[\d., -]+)\n\nTake-Profit-Targets:(?<targets>[\d+-. ]+)\n\nStopLoss:(?<sl>[\d]+).*/guim,
       /(?<coin>[\w\/]+)\n\n(?<direction>Long|Short)\n\nLeverage:(?<leverage>\d+)x\n\nEntry[\w\- ]+:(?<entry>[\d., -]+)\n\nTake-Profit-Targets?:(?<targets>[\d+-. ]+)\n\nStoploss:(?<sl>[\d]+).*/guim,
+      /(?<coin>[\w\/]+)\n*(?<direction>Long|Short)\n*Leverage:(?<leverage>\d+)x\n*Entry[\w\- ]+:(?<entry>[\d., -]+)\n*Take-Profit-Targets?:(?<targets>[\d+-. ]+)\n*Stop ?loss ?: ?(?<sl>[\d]+)/guim,
+      /(?<coin>[\w\/]+)[\n\s]*(?<direction>Long|Short)[\n\s]*Leverage:(?<leverage>\d+)x[\n\s]*Entry[\w\- ]+:(?<entry>[\d., -]+)[\n\s]*Take-Profit-Targets?:(?<targets>[\d+-. ]+)[\n\s]*Stop ?loss ?: ?(?<sl>[\d]+)/guim,
     ];
 
     for (const pattern of patterns) {
@@ -138,16 +202,16 @@ export function parseOrderString02(message: string): Partial<Order> | null {
 
 export function parseOrderString03(message: string): Partial<Order> | null {
   const pattern =
-      /https:\/\/www\.tradingview\.com\/[a-z\/0-9]{1,10}(?<coin>[\w\/]+)\n*(?<direction>Long|Short)\n*Leverage:(?<leverage>\d+)X\n*Entry[\w\- ]*:(?<entry>[\d., -]+)\n*Take-Profit-Targets?:(?<targets>[\d+-. ]+)\n*Stop ?loss ?: ?(?<sl>[\d\.]+)/gium
+      /(?<coin>[\w\/]+)\n*(?<direction>Long|Short)\n*Leverage:(?<leverage>\d+)X\n*Entry[\w\- ]*:(?<entry>[\d., -]+)\n*Take-Profit-Targets?:(?<targets>[\d+-. ]+)\n*Stop ?loss ?: ?(?<sl>[\d\.]+)/gium
 //      /(?<coin>[\w\/]+)\n*(?<direction>Long|Short)\n*Leverage:(?<leverage>\d+)x\n*Entry:(?<entry>[\d., -]+)\n*Take-Profit-Targets?:(?<targets>[\d+-. ]+)\n*Stoploss:(?<sl>[\d]+)/guim;
 
   return parseOrderText(message, pattern);
 }
 
 export function parseOrder(messageDiv: HTMLElement): Partial<Order> | null {
-  if (messageDiv.innerText.match(/tradingview.com/) && messageDiv.innerText.match(/leverage/i)) {
-    const textDiv = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement);
+  const textDiv = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement);
 
+  if (messageDiv.innerText.match(/tradingview.com/) && messageDiv.innerText.match(/leverage/i)) {
     if (textDiv.innerHTML.match(/tel:/)) {
       textDiv.innerHTML = textDiv.innerHTML.replace(/<a href="tel:([^"]+)">([^<]+)<\/a>/, '$1');
     }
@@ -206,7 +270,8 @@ export function parseOrder(messageDiv: HTMLElement): Partial<Order> | null {
     }
   }
 
-  const text = messageDiv.innerText ?? "";
+  // todo: cleanup here makes it actually worse...
+  const text = cleanUpHtml(textDiv); // messageDiv.innerText ?? "";
   return parseOrderString(text);
 }
 
