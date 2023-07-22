@@ -27,12 +27,18 @@ import {
 } from "./parser.ts";
 
 export function parseOrderString(message: string): Partial<Order> | null {
-  return parseOrderString01(message)
+  const result = parseOrderString01(message)
       ?? parseOrderString02(message)
       ?? parseOrderString03(message)
       ?? parseOrderString04(message)
       ?? parseOrderString05(message)
       ?? parseOrderString06(message);
+
+  if (result?.targets?.length === 0) {
+    console.log(targets);
+  }
+  
+  return result;
 }
 
 export function parseOrderString05(message: string): Partial<Order> | null {
@@ -44,6 +50,30 @@ export function parseOrderString05(message: string): Partial<Order> | null {
     // this is just wild guess, parse all numbers and find out meaning
     console.log(matches);
   }
+}
+
+function extractTargets(targetsStr: string) {
+  targetsStr = targetsStr?.replace('+', '-') ?? "";
+  const targetSubpattern = /Target (?<target>\d+) : (?<targetValue>[\d\.,]+)?/g;
+
+  const targetMatches = [
+    ...targetsStr.matchAll(targetSubpattern)
+  ].map((x, idx) => ({
+    tp: idx + 1,
+    value: cleanAndParseFloat(x.groups?.targetValue ?? ""),
+  }));
+
+  let targets = targetMatches.map((x) => x.value);
+
+  if (targets.length === 0) {
+    targets = targetsStr.split(/ ?[-,] ?/).map(x => parseFloat(x));
+  }
+
+  if (targets.indexOf(null) !== -1) {
+    targets = targets.filter(x => x != null);
+  }
+
+  return targets;
 }
 
 export function parseOrderString04(message: string): Partial<Order> | null {
@@ -58,17 +88,7 @@ export function parseOrderString04(message: string): Partial<Order> | null {
       continue;
     }
 
-    const targetsStr = match.groups?.targets ?? "";
-    const targetSubpattern = /Target (?<target>\d+) : (?<targetValue>[\d\.,]+)?/g;
-    const targetMatches = [
-      ...targetsStr.matchAll(targetSubpattern)
-    ].map((x, idx) => ({
-      tp: idx + 1, // parseInt(x.groups?.target ?? ''),
-      value: cleanAndParseFloat(x.groups?.targetValue ?? ""),
-    }));
-
-    const targets = targetMatches.map((x) => x.value);
-
+    const targets = extractTargets(match.groups?.targets ?? "");
     const coin = match.groups?.coin ?? match[1];
     const direction = (match.groups?.direction ?? match[2]).toUpperCase();
     const exchange = null;
@@ -118,37 +138,28 @@ export function parseOrderString01(message: string): Partial<Order> | null {
             continue;
         }
 
-        const targetsStr = match.groups?.targets ?? "";
-        const targetSubpattern = /Target (?<target>\d+) : (?<targetValue>[\d\.,]+)?/g;
-        const targetMatches = [
-          ...targetsStr.matchAll(targetSubpattern)
-        ].map((x, idx) => ({
-              tp: idx + 1, // parseInt(x.groups?.target ?? ''),
-      value: cleanAndParseFloat(x.groups?.targetValue ?? ""),
-    }));
+        const targetsStr = match.groups?.targets?.replace('+', '-') ?? "";
+        const targets = extractTargets(targetsStr);
+        const coin = match.groups?.coin ?? match[1];
+        const direction = (match.groups?.direction ?? match[2]).toUpperCase();
+        const exchange = null;
+        const leverageStr = match.groups?.leverage ?? match[4];
+        const leverage = parseInt(leverageStr);
+        const entry = (match.groups?.entry ?? match[5]).trim().split(" - ").map((x) => cleanAndParseFloat(x));
+        const stopLoss = cleanAndParseFloat(match.groups?.sl ?? match[7]);
 
-    const targets = targetMatches.map((x) => x.value);
+        const parsedMessage = {
+            type: "order" as any,
+            coin: coin.trim(),
+            direction: direction,
+            exchange: exchange,
+            leverage: leverage,
+            entry: entry,
+            targets: targets,
+            stopLoss: stopLoss,
+        };
 
-    const coin = match.groups?.coin ?? match[1];
-    const direction = (match.groups?.direction ?? match[2]).toUpperCase();
-    const exchange = null;
-    const leverageStr = match.groups?.leverage ?? match[4];
-    const leverage = parseInt(leverageStr);
-    const entry = (match.groups?.entry ?? match[5]).trim().split(" - ").map((x) => cleanAndParseFloat(x));
-    const stopLoss = cleanAndParseFloat(match.groups?.sl ?? match[7]);
-
-    const parsedMessage = {
-      type: "order" as any,
-      coin: coin.trim(),
-      direction: direction,
-      exchange: exchange,
-      leverage: leverage,
-      entry: entry,
-      targets: targets,
-      stopLoss: stopLoss,
-    };
-
-    return parsedMessage;
+      return parsedMessage;
   }
 
   return null;
@@ -163,19 +174,7 @@ export function parseOrderString02(message: string): Partial<Order> | null {
     return null;
   }
 
-  const targetsStr = match.groups?.targets ?? "";
-  const targetSubpattern =
-      /Target (?<target>\d+):\s+(?<targetValue>[\d\.,]+)?/g;
-  const targetMatches = [...targetsStr.matchAll(targetSubpattern)].map((
-      x,
-      idx,
-  ) => ({
-    tp: idx + 1, // parseInt(x.groups?.target ?? ''),
-    value: cleanAndParseFloat(x.groups?.targetValue ?? ""),
-  }));
-
-  const targets = targetMatches.map((x) => x.value);
-
+  const targets = extractTargets(match.groups?.targets ?? "");
   const coin = match.groups?.coin ?? match[1];
   const direction = (match.groups?.direction ?? match[2]).toUpperCase();
   const exchange = null;
@@ -209,12 +208,18 @@ export function parseOrderString03(message: string): Partial<Order> | null {
 }
 
 export function parseOrder(messageDiv: HTMLElement): Partial<Order> | null {
+  if (messageDiv.innerText.match(/usdt/i) == null) { // no USDT - no order
+    return null;
+  }
+
   const textDiv = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement);
 
   if (messageDiv.innerText.match(/tradingview.com/) && messageDiv.innerText.match(/leverage/i)) {
     if (textDiv.innerHTML.match(/tel:/)) {
       textDiv.innerHTML = textDiv.innerHTML.replace(/<a href="tel:([^"]+)">([^<]+)<\/a>/, '$1');
     }
+    
+    textDiv.innerHTML = textDiv.innerHTML.replaceAll('<br>', "<br>\n");
 
    // this is highly likely an order
     const children = Array.from(textDiv.childNodes)
@@ -233,7 +238,7 @@ export function parseOrder(messageDiv: HTMLElement): Partial<Order> | null {
       const text = extractText(child) ?? child?.nodeValue ?? '';
       
       if (text.toUpperCase().indexOf('USDT') !== -1) {
-        order.coin = text?.trim();
+        order.coin = text?.trim()?.toUpperCase();
       } else if (text.match(/short|long/i)) {
         order.direction = text?.trim().toUpperCase();
       } else if (text.match(/leverage/i)) {
@@ -241,16 +246,16 @@ export function parseOrder(messageDiv: HTMLElement): Partial<Order> | null {
         if (matches) {
           order.leverage = parseInt(matches[0]);
         }
-      } else if (text.match(/entry/i)) {
+      } else if (text.match(/entry|buy|enter/i)) {
         const matches = /.*:[^\d]*([\d.\- ]+)/.exec(text);
         if (matches) {
           const entries = matches[1]?.split(/ ?- ?/)?.map(x => parseFloat(x));
           order.entry = entries;
         }
-      } else if (text.match(/target/i)) {
-        const matches = /.*:([\d.\- ]+)/.exec(text);
+      } else if (text.match(/targets?/i)) {
+        const matches = /.*:([\d.\- ,]+)/.exec(text);
         if (matches) {
-          const targets = matches[1]?.split(/ ?- ?/)
+          const targets = matches[1]?.split(/ ?[-,] ?/)
               ?.filter(x => x !== '')
               ?.map(x => parseFloat(x));
           order.targets = targets;
@@ -264,9 +269,11 @@ export function parseOrder(messageDiv: HTMLElement): Partial<Order> | null {
       }
     }
 
-    if (order.entry == null || order.stopLoss == null) {
+    if (order.entry == null || order.stopLoss == null || order.targets == null) {
       const text = cleanUpHtml(textDiv);
       return parseOrderString(text);
+    } else {
+      return order;
     }
   }
 
@@ -379,17 +386,17 @@ function cleanUpHtml(div: HTMLElement): string {
 
 export function parseMessage(messageDiv: HTMLElement): Message {
   const pipeline: PartialParser[] = [
-      parseOrder,
+      parseTP,
+      parseSL,
+      parseClose,
+      parseCancelled,
+      parseSLAfterTP,
       parseEntry,
       parseEntryAll,
-      parseClose,
       parseOpposite,
-      parseSLAfterTP,
-      parseSL,
-      parseTP,
       parseTPAll,
-      parseCancelled,
       parseTPWithoutProfit,
+      parseOrder,
       parseInfoMessage,
   ];
 
