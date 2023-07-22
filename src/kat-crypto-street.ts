@@ -127,7 +127,14 @@ export function parseOrderString08(message: string): Partial<Order> | null {
 
 export function parseOrderString07(message: string): Partial<Order> | null {
   const patterns = [
-    /(?<coin>[\w\/]+).*(?<direction>Long|Short).*Leverage:(?<leverage>[\d.]+)x.*Entry:(?<entry>[\d., -]+).*Take-Profit-Targets:(?<targets>[\d+-. %)]+).*Stoploss:?(?<sl>[\d+-. )]+)/guis
+    /(?<coin>[\w\/]+).*(?<direction>Long|Short).*Leverage:(?<leverage>[\d.]+)x.*(?:Entry|Entry zone):\s*(?<entry>[\d., -]+).*Take-Profit-Targets:\s*(?<targets>[\d+-. %)]+).*Stoploss:?(?<sl>[\d+-. )]+)/guis,
+    /(?<coin>[\w\/]+).*(?<direction>Long|Short).*(?:Entry|Entry zone):\s*(?<entry>[\d., -]+)\s*Leverage:(?<leverage>[\d.]+)x.*(?:Take-Profit-Targets|Targets):?\s*(?<targets>[\d+-. %)]+).*Stoploss:?\s*(?<sl>[\d+-. \)]+)/guis,
+    /(?<coin>[\w\/]+).*(?<direction>Long|Short).*Leverage:cross (?<leverage>[\d.]+)x.*(?:Entry|Entry zone):\s*(?<entry>[\d., -]+).*Take-Profit-Targets?:\s*(?<targets>[\d+-. %)]+).*Stoploss:?(?<sl>[\d+-. )]+)/guis,
+    /(?<coin>[\w\/]+).*(?<direction>Long|Short).*Leverage:(?<leverage>[\d.]+)x.*(?:Entry|Entry zone):\s*(?<entry>[\d., -]+).*(?:Targets?|Take-Profit-Targets?):?\s*(?<targets>[\d+-. %)]+).*Stoploss:?\s*(?<sl>[\d+-. )]+)/guis,
+    /(?<coin>[\w\/]+).*Leverage:(?<leverage>[\d.]+)x.*(?<direction>Long|Short).*(?:Entry|Entry zone|Leverage):\s*(?<entry>[\d., -]+).*(?:Targets?|Take-Profit-Targets?):?\s*(?<targets>[\d+-. %)]+).*Stoploss:?\s*(?<sl>[\d+-. )]+)/guis,
+    /(?<coin>[\w\/]+).*(?<direction>Long|Short).*Leverage\s*:\s*(?<leverage>[\d.]+)x.*(?:Entry|Entry zone|Leverage)\s*:\s*(?<entry>[\d., -]+).*(?:Targets?|Take-Profit-Targets?):?\s*(?<targets>[\d+-. %)]+).*Stop ?loss ?:?\s*(?<sl>[\d+-. )]+)/guis,
+    /(?<coin>[\w\/]+).*(?<direction>Long|Short).*Leverage\s*:\s*(?<leverage>[\d.]+)x.*(?:Entry|Entry zone|Leverage)\s*:\s*(?<entry>[\d., -]+).*(?:Targets?|Take-Profit-Targets?):?\s*(?<targets>[\d+-. %)]+).*(?:Stop ?loss ?|Stop Targets):?\s*(?<sl>[\d+-. )]+)/guis,
+      
   ];
 
   for (const pattern of patterns) {
