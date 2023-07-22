@@ -18,6 +18,7 @@ import { getAllMessages as getWallStreetCryptoTradingMessages } from "../wallstr
 import { getAllMessages as getFutureBullsMessages } from "../future-bulls.ts";
 import { getAllMessages as getAccountantMessages } from "../accountant.ts";
 import { getAllMessages as getPlanktonMessages } from "../plankton.ts";
+import { getAllMessages as getKatCryptoMessages } from "../kat-crypto-street.ts";
 
 import { OrderDetail, StopLoss, getOrderSignalInfoFull, getOrderSignals, groupRelatedSignals, mapSLToOrder, TakeProfitAll } from "../parser.ts";
 
@@ -83,6 +84,7 @@ export async function parse(directory: string[], group: string) {
         .with('future-bulls', () => getFutureBullsMessages)
         .with('accountant', () => getAccountantMessages)
         .with('plancton', () => getPlanktonMessages)
+        .with('kat-crypto', () => getKatCryptoMessages)
         .with(_, () => { throw new Error('Invalid group'); })
         .exhaustive();
 
