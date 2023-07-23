@@ -119,7 +119,7 @@ export function parseOrderText(message: string, pattern: RegExp): Partial<Order>
     const match = pattern.exec(message.trim());
 
     if (match) {
-      const coin = match.groups?.coin ?? match[1];
+      const coin = match.groups?.coin?.toUpperCase()?.trim() ?? match[1];
       const direction = (match.groups?.direction ?? match[2]).toUpperCase();
       const exchange = (match.groups?.exchange ?? match[3]);
       const leverage = parseInt((match.groups?.leverage ?? match[4]).replace('x', ''));
