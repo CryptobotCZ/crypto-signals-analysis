@@ -69,6 +69,13 @@ export async function doExport(orderDetails: OrderDetail[], path: string, anonym
 // direction?: 'SHORT' | 'LONG';
 
 async function exportJson(orderDetails: OrderDetail[], path: string) {
+  const mapToExportedEvent = (event) => {
+    return {
+      type: event.type,
+      date: event.date,
+    };
+  };
+
   const ordersForExport: CornixOrder[] = orderDetails.map(order => {
     return {
       signalId: order.order.signalId ?? getOrderKey(order),
@@ -80,6 +87,7 @@ async function exportJson(orderDetails: OrderDetail[], path: string) {
       entries: order.order.entry,
       tps: order.order.targets,
       sl: order.order.stopLoss,
+      events: order.events.map(mapToExportedEvent),
     };
   });
 

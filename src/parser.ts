@@ -36,10 +36,19 @@ export interface InfoMessage extends GenericMessage { type: 'info', text: string
 export interface UnknownMessage extends GenericMessage { type: 'unknown', text: string }
 
 export interface OrderDetail {
-    order: Order; entries: Entry[]; tps: TakeProfit[]; sl: StopLoss[]; other: Message[]; maxReachedEntry: number; maxReachedTp: number;
-    avgEntryPrice: number; avgTpValue: number;
+    order: Order;
+    entries: Entry[];
+    tps: TakeProfit[];
+    sl: StopLoss[];
+    other: Message[];
+    maxReachedEntry: number;
+    maxReachedTp: number;
+    avgEntryPrice: number;
+    avgTpValue: number;
     pnl: number;
-    closed: boolean; lev: number;
+    closed: boolean;
+    lev: number;
+    events: any[];
 }
 
 
@@ -530,6 +539,8 @@ export function getOrderSignalInfoFull(signal: Message, groupedSignals: { [key: 
     const sl = relatedSignals.filter(x => x.type == 'SL') as StopLoss[];
     const slTp = relatedSignals.filter(x => x.type === 'SLTP') as SLAfterTP[];
     const close = relatedSignals.filter(x => x.type === 'close') as Close[];
+    const cancel = relatedSignals.filter(x => x.type === 'cancelled') as Cancel[];
+    const opposite = relatedSignals.filter(x => x.type === 'opposite') as Opposite[];
 
     const other = relatedSignals.filter(x => (['spotOrder', 'order' , 'entry', 'entryAll', 'TP', 'TPAll', 'SL', 'SLTP' ] as typeof x.type[]).indexOf(x.type) === -1);
 
@@ -580,6 +591,12 @@ export function getOrderSignalInfoFull(signal: Message, groupedSignals: { [key: 
 
     const closed = maxReachedTp === order.targets.length || sl.length > 0 || close.length > 0 || slTp.length > 0;
 
+    const events = [
+        ...cancel,
+        ...close,
+        ...opposite,
+    ];
+
     const data = {
         order,
         entries,
@@ -595,7 +612,8 @@ export function getOrderSignalInfoFull(signal: Message, groupedSignals: { [key: 
         avgTpValue,
         pnl,
         closed,
-        lev
+        lev,
+        events,
     };
 
     return data;
