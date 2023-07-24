@@ -554,7 +554,7 @@ export function getOrderSignalInfoFull(signal: Message, groupedSignals: { [key: 
         };
     }
 
-    if (order.direction === 'LONG') {
+    if (order?.direction?.toUpperCase() === 'LONG') {
         order.entry.sort((a,b) => b - a);
     } else {
         order.entry.sort((a,b) => a - b);
