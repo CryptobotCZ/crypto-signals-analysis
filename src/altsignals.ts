@@ -14,16 +14,24 @@ export function parseOrderUpdate(messageDiv: HTMLElement): Partial<SignalUpdate>
 }
 
 export function parseOrder(messageDiv: HTMLElement): Partial<Order> | null {
-    const text = messageDiv.innerText ?? '';
-    return parseOrderString(text) ?? parseMessageGPT(text);
+    const textDiv = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement);
+    if (textDiv == null) { 
+        return null;
+    }
+
+    textDiv.innerHTML = textDiv.innerHTML.replaceAll('<br>', "<br>\n");
+
+    const text = cleanUpMessage(textDiv?.innerText ?? '');
+    return parseOrderString(text);
 }
 
 export function parseOrderString(message: string): Partial<Order> | null {
   const parsers = [
     parseOrderString01,
-    parseOrderStringVariant2,
-    parseMessageGPT,
-    parseOrderStringVariant3,
+    parseOrderString02,
+    parseOrderString03,
+    parseOrderString04GPT,
+    parseOrderString05,
   ];
 
   for (const parser of parsers) {
@@ -44,58 +52,66 @@ export function parseOrderString(message: string): Partial<Order> | null {
 function cleanUpMessage(message: string) {
     return message
         .trim()
-        .replace(/(?:\r\n|\r|\n)+/g, "\n")
-        .replace(/( +)/, " ")
-        .replace(" :", ":") ?? "";
+        .replaceAll(/(?:\r\n|\r|\n)+/g, "\n")
+        .replaceAll(/\s+/g, " ")
+        .replaceAll(/\s+:/g, ":")
+        .replaceAll(/:\s+/g, ":")
+        ?? "";
 }
 
-export function parseOrderStringVariant3(message: string): Partial<Order> | null {
-  message = cleanUpMessage(message);
+function replaceNumberedListDashSeparated(text: string) {
+    const fixedText = text?.replaceAll(/\d\) ?/ug, " ")
+        ?.replaceAll("\n", " ")
+        ?.trim()
+        ?.replaceAll(/\s*[-–]\s*/g, " ")
+        ?.replaceAll(/ +/g, " ");
 
-  const regix = /(?:Coin: )?(?<coin>[\w]+) ?\(?(?<direction>LONG|SHORT|Long|)\)?\\n?(?:Leverage ?:? ?) ?(?<leverage>[\d.]+)[xX][\\n]*(?:Entry ?: ?|Entry Targets ?: ?)\\n?(?<entries>[\)\d\.\\n ]+)\n?(?:Take-Profit Targets:|Targets? ?: ?)\n?(?<takeProfits>[\)\d\\n\., ]+)\n?(?:Stop Targets:|Stoploss ?: ?)\n?(?<sl>.+)/gmiu;
-  const regex = /(?:Coin: )?(?<coin>[\w]+) ?\(?(?<direction>LONG|SHORT|Long|)\)?\n?(?:Leverage ?:? ?) ?(?<leverage>[\d.]+)[xX][\n]*(?:Entry ?: ?|Entry Targets ?: ?)\n?(?<entries>[\)\d\.\n ]+)\n?(?:Take-Profit Targets:|Targets? ?: ?)\n?(?<takeProfits>[\)\d\n\., ]+)\n?(?:Stop Targets:|Stoploss ?: ?)\n?(?<sl>.+)/gmiu;
+    const numbersArray = fixedText?.split(/\s+-\s+|\s+/)?.map((x) => parseFloat(x)) ?? [ 0 ];
+    return numbersArray;
+}
 
-  const match = regex.exec(message);
-  const match2 = regix.exec(message);
+// no prefix, coin, direction leverage or no prefix coin leverage direction orders
+export function parseOrderString05(message: string): Partial<Order> | null {
+    const patterns = [
+        /(?:Coin: )?(?<coin>[\w\/]+)\s*(?<direction>LONG|SHORT|Long)\s*(?:Leverage)\s*:?\s*(?<leverage>[\d.]+)[xX]\s*(?:Entry ?: ?|Entry Targets ?: ?)\s*(?<entries>[\d\.\- ]+)\s*(?:Take-Profit Targets:|Targets? ?: ?)\s*(?<takeProfits>[\d., -]+)\s*(?:SL|Stop Targets|Stoploss)\s*:?\s*(?<sl>[\d.]+)/sui,
+        /(?:Coin: )?(?<coin>[\w]+) ?\(?(?<direction>LONG|SHORT|Long|)\)?\n?(?:Leverage ?:? ?) ?(?<leverage>[\d.]+)[xX][\n]*(?:Entry ?: ?|Entry Targets ?: ?)\n?(?<entries>[\)\d\.\n ]+)\n?(?:Take-Profit Targets:|Targets? ?: ?)\n?(?<takeProfits>[\)\d\n\., ]+)\n?(?:Stop Targets:|Stoploss ?: ?)\n?(?<sl>.+)/siu,
+        /(?:Coin: )?(?<coin>\w+) ?(?<direction>LONG|SHORT|Long) ?(?:Leverage ?:?) ?(?<leverage>[\d.]+)[xX]\s*(?:Entry ?: ?|Entry Targets ?: ?)\s*(?<entries>[\d.\- ]+)\s*(?:Take-Profit Targets:|Targets? ?: ?)\s*(?<takeProfits>[\d., -]+)\s*(?:Stop Targets:|Stoploss ?: ?)\s*(?<sl>[\d.]+)/sui,
+    ];
 
-  if (!match) {
+    for (const pattern of patterns) {
+        const match = pattern.exec(message);
+
+        if (!match) {
+            continue;
+        }
+
+        const coin = match.groups?.coin;
+        const direction = match.groups?.direction?.toUpperCase();
+        const exchange = undefined;
+        const leverage = parseInt(match.groups?.leverage?.replace(".0", "") ?? "");
+        const entry = replaceNumberedListDashSeparated(match.groups?.entries ?? "");
+        const targets = replaceNumberedListDashSeparated(match.groups?.takeProfits ?? "");
+        const stopLoss = replaceNumberedListDashSeparated(match.groups?.sl ?? "")[0];
+
+        const parsedMessage = {
+            type: "order" as any,
+            coin: coin,
+            direction: direction,
+            exchange: exchange,
+            leverage: leverage,
+            entry: entry,
+            targets: targets,
+            stopLoss: stopLoss,
+        };
+
+        return parsedMessage;
+    }
+
     return null;
-  }
-
-  const replaceNumberedList = (text: string) => {
-    const fixedText = text?.replaceAll(/\d\) /ug, " ")
-      ?.replaceAll("\n", " ")
-      ?.trim()
-      ?.replaceAll(" - ", " ")
-      ?.replaceAll(/ +/g, " ");
-
-    return fixedText?.split(" ")?.map((x) => parseFloat(x)) ??
-      [0];
-  };
-
-  const coin = match.groups?.coin;
-  const direction = match.groups?.direction?.toUpperCase();
-  const exchange = undefined;
-  const leverage = parseInt(match.groups?.leverage?.replace(".0", "") ?? "");
-  const entry = replaceNumberedList(match.groups?.entries ?? "");
-  const targets = replaceNumberedList(match.groups?.takeProfits ?? "");
-  const stopLoss = replaceNumberedList(match.groups?.sl ?? "")[0];
-
-  const parsedMessage = {
-    type: "order" as any,
-    coin: coin,
-    direction: direction,
-    exchange: exchange,
-    leverage: leverage,
-    entry: entry,
-    targets: targets,
-    stopLoss: stopLoss,
-  };
-
-  return parsedMessage;
 }
 
-export function parseMessageGPT(message: string): Partial<Order> | null {
+// coin prefix
+export function parseOrderString04GPT(message: string): Partial<Order> | null {
   const regex =
     /Coin:?\s*([^\s]+)\s*(?:\(SHORT\)|SHORT)?\s*Leverage\s*:\s*([\w\s]+)\s*Entry\s*:\s*((?:\d+\.\d+\s*-\s*\d+\.\d+|\d+\.\d+))[^:]+:\s*((?:\d+\.\d+\s*-?\s*)+)\s*Stoploss\s*:\s*([\d.]+)/;
   const match = message.match(regex);
@@ -120,101 +136,112 @@ export function parseMessageGPT(message: string): Partial<Order> | null {
   } as any;
 }
 
-export function parseOrderStringVariant2(message: string): Partial<Order> | null {
-    const pattern = /Pair: (.+) (.+)Leverage: (.+)Entry: (.+)Targets: (.+)Stop loss: (.+)/;
-    const match = pattern.exec(message.trim());
+// pair prefix
+export function parseOrderString03(message: string): Partial<Order> | null {
+    const patterns = [
+        /Pair: (?<coin>.+) (?<direction>.+)Leverage: (?:Cross |Isolated ?x?)?(?<leverage>.+)Entry: (?<entries>.+)Targets: (?<targets>.+)Stop loss: (?<sl>.+)/sui,
+        /(?<coin>\w+)\s*(?<direction>short|long)\s*Leverage\s*:\s*(?<leverageMode>Cross|Isolated)?\s*(?<leverage>[\d.]+)x\s*Entry\s*:\s*(?<entries>[\d.\- ]+)\s*(?<targets>(?:Target\s*\d+\s*:\s*[\d.]+)+)\s*Stoploss\s*:\s*(?<sl>[\d.]+)/sui,
+    ];
 
-    if (!match) return null;
+    for (const pattern of patterns) {
+        const match = pattern.exec(message.trim());
 
-    const replaceNumberedList = (text: string) => {
-        return text?.replaceAll(/\d\) /ug, ' ')
-            ?.trim()
-            ?.replaceAll(' - ', ' ')
-            ?.split(' ')
-            ?.map(x => parseFloat(x))
+        if (!match) continue;
 
-            ?? [0];
-     };
+        const coin = match?.groups?.coin?.trim()?.toUpperCase();
+        const direction = match?.groups?.direction?.trim()?.toUpperCase();
+        const exchange = null;
+        const leverage = parseInt(match?.groups?.leverage?.replace('x', ''));
+        const entry = replaceNumberedListDashSeparated(match?.groups?.entries ?? '');
+        const targets = replaceNumberedListDashSeparated(match?.groups?.targets ?? '');
+        const stopLoss = replaceNumberedListDashSeparated(match?.groups?.sl ?? '')[0];
+    
+        const parsedMessage = {
+            type: 'order' as any,
+            coin: coin,
+            direction: direction,
+            exchange: exchange,
+            leverage: leverage,
+            entry: entry,
+            targets: targets,
+            stopLoss: stopLoss,
+        };
+    
+        return parsedMessage;
+    }
 
-      const coin = match[1];
-      const direction = match[2];
-      const exchange = match[3];
-      const leverage = parseInt(match[4].replace('x', ''));
-      const entry = replaceNumberedList(match[5]);
-      const targets = replaceNumberedList(match[6]);
-      const stopLoss = replaceNumberedList(match[7])[0];
-
-      const parsedMessage = {
-        type: 'order' as any,
-        coin: coin,
-        direction: direction,
-        exchange: exchange,
-        leverage: leverage,
-        entry: entry,
-        targets: targets,
-        stopLoss: stopLoss,
-      };
-
-    return parsedMessage;
+    return null;
 }
 
+// for entry and TP format with 1) 
 export function parseOrderString01(message: string): Partial<Order> | null {
-    message = cleanUpMessage(message);
+    const patterns = [
+        /(?:Coin:\s*)?(?<coin>[\w\/]+)\s*(?<direction>LONG|SHORT)?\s*Leverage\s*:?\s*(?<leverage>[\d.]+)\s*x\s*(?:Entry|Entry Targets)\s*:\s*(?<entries>[\d.\- ]+)\$?\s*(?:Take-Profit Targets:|Targets? ?: ?)(?<takeProfits>.+)(?:Stop Targets:|Stoploss ?: ?)(?<sl>[\d.]+)/sui,
+        /(?:Coin: ?)?(?<coin>.+)  ?\(?(?<direction>LONG|SHORT|Long|)\)?\n?(?:Leverage ?\:? ?) ?(?<leverage>[\d.]+)(?:x|X)(?:Entry ?: ?|Entry Targets ?: ?)(?<entries>[\d.)]+)(?:Take-Profit Targets:|Targets? ?: ?)(?<takeProfits>.+)(?:Stop Targets:|Stoploss ?: ?)(?<sl>.+)/si,
+        /(?:Coin|Coin Name:\s*)?#?(?<coin>[\w\/]+)\s*\(?(?<direction>LONG|SHORT)?\)?\s*(?:Entry|Entry Targets)\s*:\s*(?<entries>[\d.\- ]+)\$?\s*Leverage\s*:?\s*(?:cross|isolated)?\s*(?<leverage>[\d.]+)\s*x\s*(?:Take-Profit Targets:|Targets? ?: ?)(?<takeProfits>.+)(?:Stop Targets:|Stoploss ?: ?)(?<sl>[\d.]+)/sui,
+        /(?:Coin|Coin Name:\s*)?#?(?<coin>[\w\/]+)\s*Leverage\s*:?\s*(?:cross|isolated)?\s*(?<leverage>[\d.]+)\s*x\s*\(?(?<direction>LONG|SHORT)?\)?\s*(?:Entry|Entry Targets)\s*:\s*(?<entries>[\d.\- –]+)\$?\s*(?:Take-Profit Targets|Targets)\s*:\s*(?<takeProfits>[–\d.\- ]+)\s*(?:Stop Targets|Stoploss|SL)\s*:\s*(?<sl>[\d.]+)/sui,
+        /(?:Coin|Coin Name:\s*)?#?(?<coin>[\w\/]+)\s*\(?(?<direction>LONG|SHORT)?\)?\s*Leverage\s*:?\s*(?:cross|isolated)?\s*(?<leverage>[\d.]+)\s*x\s*(?:Entry|Entry Targets)\s*:\s*(?<entries>[\d.\- –]+)\$?\s*(?:Take-Profit Targets|Targets)\s*:\s*(?<takeProfits>[–\d.\- ]+)\s*(?:Stop Targets|Stoploss|SL)\s*:\s*(?<sl>[\d.]+)/sui,
+    ];
 
-    const pattern = /(?:Coin: )?(?<coin>.+)  ?\(?(?<direction>LONG|SHORT|Long|)\)?\n?(?:Leverage ?\:? ?) ?(?<leverage>[\d.]+)(?:x|X)(?:Entry ?: ?|Entry Targets ?: ?)(?<entries>.+)(?:Take-Profit Targets:|Targets? ?: ?)(?<takeProfits>.+)(?:Stop Targets:|Stoploss ?: ?)(?<sl>.+)/i;
-    const match = pattern.exec(message.trim());
+    for (const pattern of patterns) {
+        const match = pattern.exec(message);
+        if (!match || match.groups?.coin?.match(/short|long/i)) {
+            continue;
+        }
 
-    if (match) {
-      const replaceNumberedList = (text: string) => {
-        return text?.replaceAll(/\d\) /ug, ' ')
-            ?.trim()
-            ?.replaceAll(' - ', ' ')
-            ?.split(' ')
-            ?.map(x => parseFloat(x))
+        const coin = match.groups?.coin;
+        const direction = match.groups?.direction;
+        const exchange = null;
+        const leverage = parseInt(match.groups?.leverage?.replace("x", "") ?? "");
+        const entry = replaceNumberedListDashSeparated(match.groups?.entries ?? "");
+        const targets = replaceNumberedListDashSeparated(match.groups?.takeProfits ?? "");
+        const stopLoss = replaceNumberedListDashSeparated(match.groups?.sl?.replace("$", "") ?? "")[0];
 
-            ?? [0];
-     };
+        const parsedMessage = {
+            type: 'order' as any,
+            coin: coin,
+            direction: direction,
+            exchange: exchange,
+            leverage: leverage,
+            entry: entry,
+            targets: targets,
+            stopLoss: stopLoss,
+        };
 
-      const coin = match.groups?.coin;
-      const direction = match.groups?.direction;
-      const exchange = null;
-      const leverage = parseInt(match.groups?.leverage?.replace("x", "") ?? "");
-      const entry = replaceNumberedList(match.groups?.entries ?? "");
-      const targets = replaceNumberedList(match.groups?.takeProfits ?? "");
-      const stopLoss = replaceNumberedList(match.groups?.sl ?? "")[0];
-
-      const parsedMessage = {
-        type: 'order' as any,
-        coin: coin,
-        direction: direction,
-        exchange: exchange,
-        leverage: leverage,
-        entry: entry,
-        targets: targets,
-        stopLoss: stopLoss,
-      };
-
-    return parsedMessage;
-  }
+        return parsedMessage;
+    }
 
   return null;
 }
 
-export function parseOrder2(messageDiv: HTMLElement): Partial<Order> | null {
-    const pattern = /(.+)  ?\((LONG|SHORT|Long|Short)\)\n?(?:Leverage\:) ([\d.]+)(?:x|X)Entry Targets:(.+)Take-Profit Targets:(.+)Stop Targets:(.+)/g;
-    const message = messageDiv.innerText ?? '';
+// also entry and TP with x)
+export function parseOrderString02(message: string): Partial<Order> | null {
+    const pattern = /(?<coin>[^\s(]+)\s*\(?(?<direction>LONG|SHORT|Long|Short)\)?\s*(?:Leverage\s*:)\s*(?<leverage>[\d.]+)(?:x|X)\s*(?:Entry Targets|Entry)\s*:\s*(?<entries>[\d). ]+)(?:Take-Profit Targets|Targets)\s*:\s*(?<takeProfits>.+)(?:Stop Targets|SL|stoploss)\s*:\s*(?<sl>.+)/gu;
+    // const pattern = /(?<coin>.+)  ?\(?(?<direction>LONG|SHORT|Long|Short)\)?\n?(?:Leverage:) (?<leverage>[\d.]+)(?:x|X)(?:Entry Targets|Entry):\s*(?<entries>.+)(?:Take-Profit Targets|Targets):\s*(?<takeProfits>.+)(?:Stop Targets|SL):\s*(?<sl>.+)/gu;
     const match = pattern.exec(message.trim());
 
     if (match) {
-      const replaceNumberedList = (text: string) => text?.trim()?.split(" - ")?.map(x => x.trim().replace(",", ""))?.map(x => parseFloat(x));
+      const replaceList = (text: string) => {
+          return text?.trim()?.split(/\s*-\s*/)
+              ?.map(x => x.trim().replace(/,\s*/, ""))
+              ?.map(x => parseFloat(x));
+      }
 
-      const coin = match[1];
-      const direction = match[2];
-      const exchange = match[3];
-      const leverage = parseInt(match[4].replace('x', ''));
-      const entry = replaceNumberedList(match[5]);
-      const targets = replaceNumberedList(match[6]);
-      const stopLoss = parseFloat(match[7]);
+      const replaceListInMessage = (text: string) => {
+          const listReplacer = text.indexOf(")") > -1
+              ? replaceNumberedListDashSeparated
+              : replaceList;
+
+          return listReplacer(text);
+      };
+
+      const coin = match.groups?.coin?.toUpperCase()?.trim();
+      const direction = match.groups?.direction?.toUpperCase()?.trim();
+      const exchange = null;
+      const leverage = parseInt(match.groups?.leverage?.replace('x', ''));
+      const entry = replaceListInMessage(match.groups?.entries ?? '');
+      const targets = replaceListInMessage(match.groups?.takeProfits ?? '');
+      const stopLoss = replaceListInMessage(match.groups?.sl ?? '')[0];
 
       const parsedMessage = {
         type: 'order' as any,
@@ -341,7 +368,7 @@ export function parseClose(messageDiv: HTMLElement): Partial<Close> | null {
         return parsedEntry;
     }
 
-    if (messageDiv.innerText.match(/Close|closing/i)) {
+    if (message?.match(/Close|closing/i)) {
         return {
             type: "close",
             relatedTo: referencedMessageId,
@@ -584,11 +611,11 @@ export function getOrderSignalInfoFull(signal: Message, groupedSignals: { [key: 
         };
     }
 
-    if (order.direction === 'LONG') {
-        order.entry.sort((a,b) => b - a);
-    } else {
-        order.entry.sort((a,b) => a - b);
-    }
+    // if (order.direction === 'LONG') {
+    //     order.entry.sort((a,b) => b - a);
+    // } else {
+    //     order.entry.sort((a,b) => a - b);
+    // }
 
     const avgEntryPrice = entries.map(x => x.price).reduce((sum, entry) => entry + sum, 0) / Math.max(entries.length, 1);
 
@@ -660,7 +687,6 @@ export function parseMessage(messageDiv: HTMLElement): Message {
     const pipeline: PartialParser[] = [
         parseOrderUpdate,
         parseOrder,
-        parseOrder2,
         parseSpotOrder,
         parseEntry,
         parseEntryAll,
