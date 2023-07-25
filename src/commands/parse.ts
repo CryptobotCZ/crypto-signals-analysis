@@ -11,6 +11,7 @@ import { getAllMessages as getBitsturtleMessages, getOrderSignalInfoFull as getB
 import { getAllMessages as getWallstreetQueenMessages } from "../wallstreet_queen.ts";
 import { getAllMessages as getCryptokeyMessages } from "../cryptokey.ts";
 import { getAllMessages as getBinanceMasterMessages } from "../binance_master.ts";
+import { getAllMessages as getBinanceProMessages } from "../binance-pro.ts";
 
 import { OrderDetail, StopLoss, getOrderSignalInfoFull, getOrderSignals, groupRelatedSignals, mapSLToOrder, TakeProfitAll } from "../parser.ts";
 
@@ -68,6 +69,7 @@ export async function parse(directory: string[], group: string) {
         .with('wallstreet-queen', () => getWallstreetQueenMessages)
         .with('cryptokey', () => getCryptokeyMessages)
         .with('binance-master', () => getBinanceMasterMessages)
+        .with('binance-pro', () => getBinanceProMessages)
         .with('generic', () => getGenericMessages)
         .with(_, () => { throw new Error('Invalid group'); })
         .exhaustive();
