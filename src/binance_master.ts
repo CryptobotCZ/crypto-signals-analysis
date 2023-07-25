@@ -36,7 +36,7 @@ export function parseOrderString(message: string): Partial<Order> | null {
 export function parseOrderString01(message: string): Partial<Order> | null {
   const patterns = [
       /.*#(?<coin>[^\n]+) .*\\n*Exchanges: (?<exchange>[\w ]+)\n*Signal Type: Regular \((?<direction>.+)\)\n*Leverage: Cross \((?<leverage>\d+)х\)\n*Entry Targets:\n*(?<entry>[\d*\.]+)\n*Take-Profit Targets:\n*(?<takeProfits>.+)\n*Stop Targets:\n(.*)/gum,
-      /.*#(?<coin>[^\n]+) .*\n*Exchanges: (?<exchange>[\w ]+)\n*Signal Type: Regular \((?<direction>.+)\)\n*Leverage: Cross \((?<leverage>\d+)х\)\n*Entry Targets:\n*(?<entry>[\d*\.]+)\n*Take-Profit Targets:\n*(?<takeProfits>.+)\n*Stop Targets:\n*(.*)/gus
+      /.*#(?<coin>[^\n]+) .*\n*Exchanges: (?<exchange>[\w ]+)\s*Signal Type: Regular \((?<direction>.+)\)\n*Leverage: Cross \((?<leverage>\d+)x\)\s*Entry Targets:\n*(?<entry>[\d*.]+)\n*Take-Profit Targets:\n*(?<takeProfits>.+)\n*Stop Targets:\n*(.*)/gusi,
   ];
 
   for (const pattern of patterns) {
@@ -47,7 +47,7 @@ export function parseOrderString01(message: string): Partial<Order> | null {
     }
 
     const targetsStr = match.groups?.takeProfits ?? "";
-    const targetSubpattern = /\d+\)(?<targetValue>[\d\.]+)/g;
+    const targetSubpattern = /\d+\)\s*(?<targetValue>[\d.]+)/g;
     const targetMatches = [ ...targetsStr.matchAll(targetSubpattern) ].map((x, idx) => ({
       tp: idx + 1,
       value: cleanAndParseFloat(x.groups?.targetValue ?? ""),
