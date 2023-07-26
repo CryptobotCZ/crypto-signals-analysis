@@ -9,7 +9,7 @@ import { exportFromSource } from './src/commands/export.ts';
 
 const signals = [
   'altsignals', 'bitsturtle', 'bk-cornix', 'bk-group', 'generic', 'wallstreet-queen',
-  'cryptokey', 'binance-master', 'binance-pro', 
+  'cryptokey', 'binance-master', 'binance-pro', 'rnmkr-free', 
 ];
 
 const addSignalsArgs = (yargs: any) => {
