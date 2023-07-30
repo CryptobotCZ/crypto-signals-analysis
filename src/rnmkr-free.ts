@@ -44,7 +44,7 @@ export function parseOrderString01(message: string): Partial<Order> | null {
         }
 
         const getTargetWithPercentage = (target: string) => {
-            const targetSubpattern = /\d+\) (?<targetValue>[\d.]+) - (?<totalPct>[\d.]+%)/g;
+            const targetSubpattern = /\d+\) (?<targetValue>[\d.]+)\s*-\s*(?<totalPct>[\d.]+%)/g;
             const targetMatches = [ ...target.matchAll(targetSubpattern) ].map((x, idx) => ({
                 tp: idx + 1,
                 value: cleanAndParseFloat(x.groups?.targetValue ?? ""),
@@ -55,12 +55,7 @@ export function parseOrderString01(message: string): Partial<Order> | null {
         }
 
         const getTargetValues = (target: string) => {
-            const targetSubpattern = /\d+\) (?<targetValue>[\d.]+) - (?<totalPct>[\d.]+%)/g;
-            const targetMatches = [ ...target.matchAll(targetSubpattern) ].map((x, idx) => ({
-                tp: idx + 1,
-                value: cleanAndParseFloat(x.groups?.targetValue ?? ""),
-            }));
-
+            const targetMatches = getTargetWithPercentage(target);
             return targetMatches.map(x => x.value);
         };
 
