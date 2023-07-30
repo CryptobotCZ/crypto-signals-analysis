@@ -8,4 +8,5 @@
     tps: number[];
     sl: number | null;
     direction?: 'SHORT' | 'LONG';
+    config?: any;
 }

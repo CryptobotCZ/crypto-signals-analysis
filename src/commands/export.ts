@@ -68,7 +68,7 @@ export async function doExport(orderDetails: OrderDetail[], path: string, anonym
 // sl: number;
 // direction?: 'SHORT' | 'LONG';
 
-async function exportJson(orderDetails: OrderDetail[], path: string) {
+async function exportJson(orderDetails: OrderDetail[], path: string, withOrderConfig = false) {
   const mapToExportedEvent = (event) => {
     return {
       type: event.type,
@@ -88,6 +88,7 @@ async function exportJson(orderDetails: OrderDetail[], path: string) {
       tps: order.order.targets,
       sl: order.order.stopLoss,
       events: order.events.map(mapToExportedEvent),
+      ...({ config: (withOrderConfig ? order.order.config : undefined) }),
     };
   });
 

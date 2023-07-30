@@ -18,6 +18,7 @@ export interface Order extends GenericMessage {
     shortTermTargets?: number[];
     midTermTargets?: number[];
     stopLoss: number | null;
+    config?: any;
 }
 
 export interface Entry extends GenericMessage {  type: 'entry'; coin: string; exchange: string; entry: number; price: number; }

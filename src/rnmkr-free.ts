@@ -43,6 +43,17 @@ export function parseOrderString01(message: string): Partial<Order> | null {
             continue;
         }
 
+        const getTargetWithPercentage = (target: string) => {
+            const targetSubpattern = /\d+\) (?<targetValue>[\d.]+) - (?<totalPct>[\d.]+%)/g;
+            const targetMatches = [ ...target.matchAll(targetSubpattern) ].map((x, idx) => ({
+                tp: idx + 1,
+                value: cleanAndParseFloat(x.groups?.targetValue ?? ""),
+                percentage: cleanAndParseFloat(x.groups?.totalPct ?? ""),
+            }));
+
+            return targetMatches;
+        }
+
         const getTargetValues = (target: string) => {
             const targetSubpattern = /\d+\) (?<targetValue>[\d.]+) - (?<totalPct>[\d.]+%)/g;
             const targetMatches = [ ...target.matchAll(targetSubpattern) ].map((x, idx) => ({
@@ -61,6 +72,12 @@ export function parseOrderString01(message: string): Partial<Order> | null {
         const entry = match.groups?.entry?.trim()?.split(/-/)?.map(x => cleanAndParseFloat(x));
         const stopLoss = getTargetValues(match.groups?.sl ?? '')?.[0];
 
+        const config = {
+            tps: getTargetWithPercentage(match.groups?.takeProfits ?? '').map(x => ({
+                percentage: x.percentage,
+            })),
+        };
+
         const parsedMessage = {
             type: "order" as any,
             coin: coin,
@@ -70,6 +87,7 @@ export function parseOrderString01(message: string): Partial<Order> | null {
             entry: entry,
             targets: targets,
             stopLoss: stopLoss,
+            ... { config: targets.length > 0 ? config : undefined },
         };
 
         return parsedMessage;

@@ -119,6 +119,11 @@ yargs(Deno.args)
   .command('supported-groups', 'Shows supported groups', () => {}, () => {
     signals.forEach(group => console.log(group));
   })
+  .option('orderConfig', {
+    describe: 'Export order config',
+    type: 'boolean',
+    default: false,
+  })
   .strictCommands()
   .demandCommand(1)
   .version('version', '0.2.0').alias('version', 'V')
