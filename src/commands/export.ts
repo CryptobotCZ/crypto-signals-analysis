@@ -37,21 +37,29 @@ export interface ExportArguments {
   signals: string;
   outputPath: string;
   anonymize: boolean;
-  format?: 'csv' | 'order-json'
+  format?: 'csv' | 'order-json';
+  leverage?: 'min' | 'max';
 }
 
 export async function exportFromSource(argv: ExportArguments, config: ExportConfig = defaultConfig) {
   const { inputFiles, signals, outputPath, anonymize } = argv;
   const parsedData = await parse(inputFiles, signals);
 
-  await doExport(parsedData.orderSignals, outputPath, anonymize, argv.format, config);
+  await doExport(parsedData.orderSignals, outputPath, anonymize, argv.format, argv.leverage, config);
 }
 
-export async function doExport(orderDetails: OrderDetail[], path: string, anonymize: boolean = false, format: string = 'csv', config: ExportConfig = defaultConfig) {
+export async function doExport(
+  orderDetails: OrderDetail[],
+  path: string,
+  anonymize: boolean = false,
+  format: string = 'csv',
+  leverage: string = 'max',
+  config: ExportConfig = defaultConfig
+) {
   if (format === 'csv') {
     return await exportCsv(orderDetails, path, anonymize, config);
   } else if (format === 'order-json') {
-    return await exportJson(orderDetails, path);
+    return await exportJson(orderDetails, path, undefined, leverage);
   } else {
     throw new Error('Invalid export format');
   }
@@ -68,12 +76,22 @@ export async function doExport(orderDetails: OrderDetail[], path: string, anonym
 // sl: number;
 // direction?: 'SHORT' | 'LONG';
 
-async function exportJson(orderDetails: OrderDetail[], path: string, withOrderConfig = false) {
+async function exportJson(orderDetails: OrderDetail[], path: string, withOrderConfig = false, leverage = 'max') {
   const mapToExportedEvent = (event) => {
     return {
       type: event.type,
       date: event.date,
     };
+  };
+
+  const getLeverage = (orderLeverage: number|number[], leverage: string) => {
+    if (Array.isArray(orderLeverage)) {
+      return leverage === 'max' 
+        ? orderLeverage[1]
+        : orderLeverage[0];
+    }
+
+    return orderLeverage;
   };
 
   const ordersForExport: CornixOrder[] = orderDetails.map(order => {
@@ -82,7 +100,7 @@ async function exportJson(orderDetails: OrderDetail[], path: string, withOrderCo
       coin: order.order.coin?.trim()?.toUpperCase(),
       direction: order.order.direction?.trim()?.toUpperCase() as any,
       date: order.order.date,
-      leverage: order.order.leverage,
+      leverage: getLeverage(order.order.leverage, leverage),
       exchange: order.order.exchange,
       entries: order.order.entry,
       tps: order.order.targets,

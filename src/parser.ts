@@ -11,7 +11,7 @@ export interface Order extends GenericMessage {
     coin: string;
     direction: string;
     exchange: string;
-    leverage: number;
+    leverage: number|number[];
     entry: number[];
     ote?: number;
     targets: number[];

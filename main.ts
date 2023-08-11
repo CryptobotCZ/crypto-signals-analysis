@@ -111,6 +111,11 @@ yargs(Deno.args)
     yargs.option('delimiter', {
       type: 'string'
     });
+    yargs.option('leverage', {
+      type: 'string',
+      default: 'max',
+    });
+    yargs.choices('leverage', ['min', 'max']);
 
     addSignalsArgs(yargs);
   }, async (argv: Arguments) => {
