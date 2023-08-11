@@ -15,6 +15,7 @@ import { getAllMessages as getBinanceProMessages } from "../binance-pro.ts";
 import { getAllMessages as getRnmkrFreeMessages } from "../rnmkr-free.ts";
 import { getAllMessages as get8BitAlgozMessages } from "../8bit-algoz.ts";
 import { getAllMessages as getWallStreetCryptoTradingMessages } from "../wallstreet_crypto_trading.ts";
+import { getAllMessages as getFutureBullsMessages } from "../future-bulls.ts";
 
 import { OrderDetail, StopLoss, getOrderSignalInfoFull, getOrderSignals, groupRelatedSignals, mapSLToOrder, TakeProfitAll } from "../parser.ts";
 
@@ -77,6 +78,7 @@ export async function parse(directory: string[], group: string) {
         .with('8bit-algoz', () => get8BitAlgozMessages)
         .with('generic', () => getGenericMessages)
         .with('wallstreet-crypto-trading', () => getWallStreetCryptoTradingMessages)
+        .with('future-bulls', () => getFutureBullsMessages)
         .with(_, () => { throw new Error('Invalid group'); })
         .exhaustive();
 
