@@ -70,7 +70,7 @@ export function parseDate(dateString: string) {
     const parts = dateString.split(" ");
     const dateParts = parts[0].split(".");
     const timeParts = parts[1].split(":");
-    const timezonePart = parts[2].substring(3); // Extract the timezone offset without "UTC" prefix
+    const timezonePart = parts?.[2]?.substring(3) ?? ''; // Extract the timezone offset without "UTC" prefix
 
     const year = parseInt(dateParts[2], 10);
     const month = parseInt(dateParts[1], 10) - 1; // Month is zero-based in JavaScript Date object
