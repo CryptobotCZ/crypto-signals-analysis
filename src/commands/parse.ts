@@ -17,6 +17,7 @@ import { getAllMessages as get8BitAlgozMessages } from "../8bit-algoz.ts";
 import { getAllMessages as getWallStreetCryptoTradingMessages } from "../wallstreet_crypto_trading.ts";
 import { getAllMessages as getFutureBullsMessages } from "../future-bulls.ts";
 import { getAllMessages as getAccountantMessages } from "../accountant.ts";
+import { getAllMessages as getPlanktonMessages } from "../plankton.ts";
 
 import { OrderDetail, StopLoss, getOrderSignalInfoFull, getOrderSignals, groupRelatedSignals, mapSLToOrder, TakeProfitAll } from "../parser.ts";
 
@@ -81,6 +82,7 @@ export async function parse(directory: string[], group: string) {
         .with('wallstreet-crypto-trading', () => getWallStreetCryptoTradingMessages)
         .with('future-bulls', () => getFutureBullsMessages)
         .with('accountant', () => getAccountantMessages)
+        .with('plancton', () => getPlanktonMessages)
         .with(_, () => { throw new Error('Invalid group'); })
         .exhaustive();
 
