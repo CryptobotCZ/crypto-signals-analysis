@@ -28,12 +28,23 @@
 } from "./parser.ts";
 
 export function parseOrderString(message: string): Partial<Order> | null {
-    return parseOrderString01(message);
+    return parseOrderString01(message) ?? parseOrderString02(message);
+}
+
+export function parseOrderString02(message: string) {
+    if (message.match(/NEW VIP SIGNAL/gusi)) {
+        return { type: 'probablyOrder' as any, text: message } as any;
+    }
+
+    return null;
 }
 
 export function parseOrderString01(message: string): Partial<Order> | null {
+    message = message?.replace(' /USDT', '/USDT') ?? '';
+
     const patterns = [
-        /(?<direction>long|short)\s*:\s*(?<coin>\S+)\s*Leverage\s*(?<leverageType>isolated|cross)\s*(?<leverage>[\d.]+)X.*Entry\s*(?<entry>[\d -.\n]+)[\s\n\\n]*(?<takeProfits>(?:TP\d+\s*[\d.\n\\n ]+)+)\s*.*Stop\s*(?<sl>[\d.]+)/gusi,
+        /(?<direction>long|short)\s*:\s*(?<coin>\S+)\s*Leverage\s*(?<leverageType>isolated|cross|)\s*(?<leverage>[\d.]+)X.*Entry(?: Zone)?\s*(?<entry>[\d -.\n ]+)[\s\n\\n]*(?<takeProfits>(?:TP\d+\s*[\d.\n\\n ]+)+)\s*.*Stop\s*(?<sl>[\d.]+)/gusi,
+        /(?<direction>long|short|sell|buy)\s*:\s*(?<coin>\S+)\s*Leverage\s*(?<leverageType>isolated|cross)\s*(?<leverage>[\d.]+)X.*Entry(?: Zone)?\s*(?<entry>[\d -.\n ]+)[\s\n\\n]*(?<takeProfits>(?:TP\d+\s*[\d.\n\\n ]+)+)\s*.*Stop\s*(?<sl>[\d.]+)/gusi,
     ];
 
     for (const pattern of patterns) {
@@ -65,7 +76,10 @@ export function parseOrderString01(message: string): Partial<Order> | null {
 
         const targets = getTargetValues(match.groups?.takeProfits ?? '');
         const coin = match.groups?.coin?.trim()?.toUpperCase();
-        const direction = match.groups?.direction?.toUpperCase();
+        const direction = match.groups?.direction
+            ?.replace(/sell/i, 'short')
+            ?.replace(/buy/i, 'LONG')
+            ?.toUpperCase();
         const exchange = match.groups?.exchange ?? null;
         const leverage = parseInt(match.groups?.leverage ?? '');
         const entry = match.groups?.entry?.trim()?.split(/-/)?.map(x => cleanAndParseFloat(x));
