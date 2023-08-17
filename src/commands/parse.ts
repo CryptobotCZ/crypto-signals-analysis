@@ -18,6 +18,7 @@ import { getAllMessages as getWallStreetCryptoTradingMessages } from "../wallstr
 import { getAllMessages as getFutureBullsMessages } from "../future-bulls.ts";
 import { getAllMessages as getAccountantMessages } from "../accountant.ts";
 import { getAllMessages as getPlanktonMessages } from "../plankton.ts";
+import { getConfigurableParser } from "../configurable-parser.ts";
 
 import { OrderDetail, StopLoss, getOrderSignalInfoFull, getOrderSignals, groupRelatedSignals, mapSLToOrder, TakeProfitAll } from "../parser.ts";
 
@@ -66,7 +67,7 @@ export async function parseAll<T>(inputPaths: string[], parser: () => T[]) {
     return messages;
   }
 
-export async function parse(directory: string[], group: string) {
+export async function parse(directory: string[], group: string, config?: any) {
     const parser = match(group)
         .with('bk-group', () => getBKChannelMessages)
         .with('bk-cornix', () => getBKCornixMessages)
@@ -83,6 +84,10 @@ export async function parse(directory: string[], group: string) {
         .with('future-bulls', () => getFutureBullsMessages)
         .with('accountant', () => getAccountantMessages)
         .with('plancton', () => getPlanktonMessages)
+        .with('configurable', () => {
+            const configurableParser = getConfigurableParser(config);
+            return configurableParser;
+        })
         .with(_, () => { throw new Error('Invalid group'); })
         .exhaustive();
 

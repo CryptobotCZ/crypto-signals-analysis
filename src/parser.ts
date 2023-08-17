@@ -133,8 +133,14 @@ export function parseOrderText(message: string, pattern: RegExp): Partial<Order>
       const direction = (match.groups?.direction ?? match[2]).toUpperCase();
       const exchange = (match.groups?.exchange ?? match[3]);
       const leverage = parseInt((match.groups?.leverage ?? match[4]).replace('x', ''));
-      const entry = (match.groups?.entry ?? match[5]).trim().split(/ ?- ?/).map(x => x.trim().replace(",", "")).map(x => parseFloat(x));
-      const targets = (match.groups?.targets ?? match[6]).trim().split(/ ?- ?/).map(x => x.trim().replace(",", "")).map(x => parseFloat(x));
+      const entry = (match.groups?.entry ?? match[5]).trim().split(/ ?[-] ?/).map(x => x.trim().replace(",", "")).map(x => parseFloat(x));
+      const targets = (match.groups?.targets ?? match[6])
+          .trim()
+          .split(/ ?[-] ?/)
+          .map(x => x?.trim())
+          .filter(x => x?.length > 0)
+          .map(x => x.replace(",", ""))
+          .map(x => parseFloat(x));
       const stopLoss = parseFloat((match.groups?.sl ?? match[7]).trim().replace(",", ""));
 
       const parsedMessage = {
