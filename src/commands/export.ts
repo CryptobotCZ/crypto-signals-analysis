@@ -40,6 +40,7 @@ export interface ExportArguments {
   format?: 'csv' | 'order-json';
   leverage?: 'min' | 'max';
   parserConfigPath?: string;
+  debug?: boolean;
 }
 
 export async function exportFromSource(argv: ExportArguments, config: ExportConfig = defaultConfig) {
@@ -86,7 +87,7 @@ export async function doExport(
 // direction?: 'SHORT' | 'LONG';
 
 async function exportJson(orderDetails: OrderDetail[], path: string, withOrderConfig = false, leverage = 'max') {
-  const mapToExportedEvent = (event) => {
+  const mapToExportedEvent = (event: any) => {
     return {
       type: event.type,
       date: event.date,

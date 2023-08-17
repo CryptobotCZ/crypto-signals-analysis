@@ -7,12 +7,14 @@ export interface GenericMessage {
     messageId: string;
 }
 
+export type ExchangeType = string|null|undefined;
+
 export interface Order extends GenericMessage {
     signalId?: string;
     type: 'order' | 'spotOrder';
     coin: string;
     direction: string;
-    exchange: string;
+    exchange?: string|null;
     leverage: number|number[];
     entry: number[];
     ote?: number;
@@ -23,15 +25,15 @@ export interface Order extends GenericMessage {
     config?: any;
 }
 
-export interface Entry extends GenericMessage {  type: 'entry'; coin: string; exchange: string; entry: number; price: number; }
-export interface EntryAll extends GenericMessage  { type: 'entryAll'; coin: string; exchange: string; price: number; }
+export interface Entry extends GenericMessage {  type: 'entry'; coin: string; exchange: ExchangeType; entry: number; price: number; }
+export interface EntryAll extends GenericMessage  { type: 'entryAll'; coin: string; exchange: ExchangeType; price: number; }
 export interface Close extends GenericMessage { type: 'close'; coin: string; }
-export interface Cancel extends GenericMessage { type: 'cancelled'; coin: string; exchange: string; }
-export interface Opposite extends GenericMessage { type: 'opposite'; coin: string; exchange: string; }
-export interface SLAfterTP extends GenericMessage { type: 'SLTP'; coin: string; exchange: string; }
-export interface StopLoss extends GenericMessage { type: 'SL'; coin: string; exchange: string; pct: number; }
-export interface TakeProfit extends GenericMessage { type: 'TP'; coin: string; exchange: string; tp: number; pctStr: string; pct: number; time: string; }
-export interface TakeProfitAll extends GenericMessage {type: 'TPAll'; coin: string; exchange: string; pctStr: string; pct: number; time: string; }
+export interface Cancel extends GenericMessage { type: 'cancelled'; coin: string; exchange: ExchangeType; }
+export interface Opposite extends GenericMessage { type: 'opposite'; coin: string; exchange: ExchangeType; }
+export interface SLAfterTP extends GenericMessage { type: 'SLTP'; coin: string; exchange: ExchangeType; }
+export interface StopLoss extends GenericMessage { type: 'SL'; coin: string; exchange: ExchangeType; pct: number; }
+export interface TakeProfit extends GenericMessage { type: 'TP'; coin: string; exchange: ExchangeType; tp: number; pctStr: string; pct: number; time: string; }
+export interface TakeProfitAll extends GenericMessage {type: 'TPAll'; coin: string; exchange: ExchangeType; pctStr: string; pct: number; time: string; }
 
 export interface SignalUpdate extends GenericMessage { type: 'update', text: string }
 
@@ -50,7 +52,7 @@ export interface OrderDetail {
     avgTpValue: number;
     pnl: number;
     closed: boolean;
-    lev: number;
+    lev: number|number[];
     events: any[];
 }
 
@@ -709,7 +711,12 @@ export function mapSLToOrder(slSignal: StopLoss, orderSignals: OrderDetail[], gr
             .filter(x => x.order.messageId !== originallyMappedOrder.messageId);
 
         probablyRelatedOrders.forEach((x, index) => {
-            const slCopy =  { ...slSignal, relatedTo: x.order.messageId, messageId: `${slSignal.messageId}-${index + 1}`, exchange: x.order.exchange };
+            const slCopy =  { 
+                ...slSignal,
+                relatedTo: x.order.messageId,
+                messageId: `${slSignal.messageId}-${index + 1}`,
+                exchange: x.order.exchange
+            };
             groupedSignals[slCopy.messageId] = [ slCopy ];
             groupedSignals[x.order.messageId].push(slCopy);
 

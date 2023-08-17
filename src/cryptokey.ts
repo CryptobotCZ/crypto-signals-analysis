@@ -232,5 +232,5 @@ export function parseInBrowser() {
     const binanceFuturesSL = binanceFuturesSignals.filter(x => x.sl.length > 1);
 
     let interestingData = orderSignals.filter(x => x.order.exchange?.toLowerCase() === 'Binance Futures'.toLowerCase()); //.map(x => getSignalInfoFull(x));
-    Object.keys(groupedSignals).map(x => groupedSignals[x]).filter(x => x.length == 1).map(x => x[0]).filter(x => x.type == 'TP' && x.exchange.match('Binance'))
+    Object.keys(groupedSignals).map(x => groupedSignals[x]).filter(x => x.length == 1).map(x => x[0]).filter(x => x.type == 'TP' && x.exchange?.match('Binance'))
 }
