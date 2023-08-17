@@ -39,13 +39,22 @@ export interface ExportArguments {
   anonymize: boolean;
   format?: 'csv' | 'order-json';
   leverage?: 'min' | 'max';
+  parserConfigPath?: string;
 }
 
 export async function exportFromSource(argv: ExportArguments, config: ExportConfig = defaultConfig) {
   const { inputFiles, signals, outputPath, anonymize } = argv;
-  const parsedData = await parse(inputFiles, signals);
+  const parsedData = await parse(inputFiles, signals, argv);
 
   await doExport(parsedData.orderSignals, outputPath, anonymize, argv.format, argv.leverage, config);
+
+  if (argv.debug) {
+    const probablyOrders = parsedData.messages.filter(x => x.type as any === 'probablyOrder');
+    await writeJson('probablyOrders.json', probablyOrders, { spaces: 2 });
+
+    const unknownMessages = parsedData.messages.filter(x => x.type === 'unknown');
+    await writeJson('unknown-messages.json', unknownMessages, {spaces: 2});
+  }
 }
 
 export async function doExport(

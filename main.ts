@@ -11,6 +11,7 @@ const signals = [
   'altsignals', 'bitsturtle', 'bk-cornix', 'bk-group', 'generic', 'wallstreet-queen',
   'cryptokey', 'binance-master', 'binance-pro', 'rnmkr-free', '8bit-algoz',
   'wallstreet-crypto-trading', 'future-bulls', 'accountant', 'plancton',
+  'configurable',
 ];
 
 const addSignalsArgs = (yargs: any) => {
@@ -20,6 +21,12 @@ const addSignalsArgs = (yargs: any) => {
     default: 'generic'
   });
   yargs.choices('signals', signals);
+  
+  yargs.option('parserConfigPath', {
+    describe: 'Configuration for auto parsing mode',
+    type: 'string',
+    default: null,
+  });
 };
 
 const addDbArg = (yargs: any) => {
