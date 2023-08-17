@@ -140,4 +140,4 @@ yargs(Deno.args)
   .strictCommands()
   .demandCommand(1)
   .version('version', '0.2.0').alias('version', 'V')
-  .argv;
+  .parse();

@@ -234,6 +234,6 @@ export function parseInBrowser() {
   Object.keys(groupedSignals).map((x) => groupedSignals[x]).filter((x) =>
     x.length == 1
   ).map((x) => x[0]).filter((x) =>
-    x.type == "TP" && x.exchange.match("Binance")
+    x.type == "TP" && x.exchange?.match("Binance")
   );
 }

@@ -60,7 +60,7 @@ export function parseOrderString01(message: string): Partial<Order> | null {
 
         const targets = getTargetValues(match.groups?.takeProfits ?? '');
         const coin = match.groups?.coin?.trim()?.toUpperCase();
-        const direction = match.groups?.direction?.toUpperCase() ?? null;
+        const direction = match.groups?.direction?.toUpperCase() ?? undefined;
         const exchange = match.groups?.exchange ?? null;
         const leverage = parseInt(match.groups?.leverage ?? '');
         const entry = match.groups?.entry?.trim()?.split(/-/)?.map(x => cleanAndParseFloat(x));
@@ -110,7 +110,7 @@ export function parseSpotOrder(message: string): Partial<Order> | null {
         };
 
         const getSlValue = (sl: string) => {
-            return sl?.replaceAll(/\d+\)\s+/g, '');
+            return parseFloat(sl?.replaceAll(/\d+\)\s+/g, ''));
         };
 
         const targets = getTargetValues(match.groups?.takeProfits ?? '');

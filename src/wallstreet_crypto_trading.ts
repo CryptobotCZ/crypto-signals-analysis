@@ -47,7 +47,7 @@ export function parseOrderString01(message: string): Partial<Order> | null {
     return null;
   }
 
-  const coinStr = match.groups?.coin?.toUpperCase();
+  const coinStr = match.groups?.coin?.toUpperCase() ?? '';
   const coin = coinStr.indexOf("USDT") !== -1 ? coinStr : `${coinStr}/USDT`;
   const direction = match.groups?.direction.toUpperCase()
       ?.replace('SELL', 'SHORT')
@@ -245,6 +245,6 @@ export function parseInBrowser() {
   Object.keys(groupedSignals).map((x) => groupedSignals[x]).filter((x) =>
     x.length == 1
   ).map((x) => x[0]).filter((x) =>
-    x.type == "TP" && x.exchange.match("Binance")
+    x.type == "TP" && x.exchange?.match("Binance")
   );
 }

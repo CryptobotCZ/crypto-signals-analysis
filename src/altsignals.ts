@@ -152,7 +152,7 @@ export function parseOrderString03(message: string): Partial<Order> | null {
         const coin = match?.groups?.coin?.trim()?.toUpperCase();
         const direction = match?.groups?.direction?.trim()?.toUpperCase();
         const exchange = null;
-        const leverage = parseInt(match?.groups?.leverage?.replace('x', ''));
+        const leverage = parseInt(match?.groups?.leverage?.replace('x', '') ?? '');
         const entry = replaceNumberedListDashSeparated(match?.groups?.entries ?? '');
         const targets = replaceNumberedListDashSeparated(match?.groups?.targets ?? '');
         const stopLoss = replaceNumberedListDashSeparated(match?.groups?.sl ?? '')[0];
@@ -239,7 +239,7 @@ export function parseOrderString02(message: string): Partial<Order> | null {
       const coin = match.groups?.coin?.toUpperCase()?.trim();
       const direction = match.groups?.direction?.toUpperCase()?.trim();
       const exchange = null;
-      const leverage = parseInt(match.groups?.leverage?.replace('x', ''));
+      const leverage = parseInt(match.groups?.leverage?.replace('x', '') ?? '1');
       const entry = replaceListInMessage(match.groups?.entries ?? '');
       const targets = replaceListInMessage(match.groups?.takeProfits ?? '');
       const stopLoss = replaceListInMessage(match.groups?.sl ?? '')[0];
@@ -633,7 +633,7 @@ export function getOrderSignalInfoFull(signal: Message, groupedSignals: { [key: 
     const sumProfitPct = orderTps.filter((x, idx) => idx + 1 <= maxReachedTp)
         .reduce((sum, x) => sum + Math.abs(x - avgEntryPrice), 0) / Math.max(maxReachedTp, 1) / avgEntryPrice * lev * 100;
 
-    const sumLossPct = Math.abs(order.stopLoss - avgEntryPrice) / avgEntryPrice * lev * 100;
+    const sumLossPct = Math.abs((order.stopLoss ?? 0) - avgEntryPrice) / avgEntryPrice * lev * 100;
 
     const pnl = tps.length === 0 && sl.length > 0
         ? -sumLossPct
