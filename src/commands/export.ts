@@ -2,7 +2,7 @@ import { writeJson } from "https://deno.land/x/jsonfile/mod.ts";
 
 import { OrderDetail, getPotentialLoss, getTPPotentialProfit, groupRelatedOrders, getOrderKey } from "../parser.ts";
 import { parse } from "./parse.ts";
-import { Order as CornixOrder } from "../order.ts";
+import {getLeverage, Order as CornixOrder} from "../order.ts";
 
 export interface ExportConfig {
   locale: string;
@@ -91,16 +91,6 @@ async function exportJson(orderDetails: OrderDetail[], path: string, withOrderCo
       type: event.type,
       date: event.date,
     };
-  };
-
-  const getLeverage = (orderLeverage: number|number[], leverage: string) => {
-    if (Array.isArray(orderLeverage)) {
-      return leverage === 'max' 
-        ? orderLeverage[1]
-        : orderLeverage[0];
-    }
-
-    return orderLeverage;
   };
 
   const ordersForExport: CornixOrder[] = orderDetails.map(order => {

@@ -52,3 +52,13 @@ export function validateOrder(order: ParserOrder) {
 
     return true;
 }
+
+export function getLeverage(orderLeverage: number|number[], leverage: string = 'max') {
+    if (Array.isArray(orderLeverage)) {
+        return leverage === 'max'
+            ? orderLeverage[1]
+            : orderLeverage[0];
+    }
+
+    return orderLeverage;
+}

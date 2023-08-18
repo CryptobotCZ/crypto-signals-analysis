@@ -1,5 +1,6 @@
 import { Cancel, Close, Entry, EntryAll, Message, Opposite, Order, OrderDetail, PartialParser, SLAfterTP, SignalUpdate, StopLoss, TakeProfit, TakeProfitAll, getReferencedMessageId, parseDate } from "./parser.ts";
 import { parseMessagePipeline } from "./parser.ts";
+import {getLeverage} from "./order.ts";
 
 export function parseOrderUpdate(messageDiv: HTMLElement): Partial<SignalUpdate> | null {
     const pattern = /⚡/g;
@@ -623,7 +624,7 @@ export function getOrderSignalInfoFull(signal: Message, groupedSignals: { [key: 
     const tpsAsInt = tps.map(x => x.tp);
     const maxReachedTp = Math.max(...tpsAsInt.concat([0]));
 
-    const lev = order.leverage ?? 1;
+    const lev = getLeverage(order.leverage ?? 1);
 
     const orderTps = order.targets.map(x => x);
     const avgTpValue = orderTps.filter((x, idx) => idx + 1 <= maxReachedTp)

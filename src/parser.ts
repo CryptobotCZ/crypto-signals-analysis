@@ -1,3 +1,5 @@
+import {getLeverage} from "./order.ts";
+
 export interface GenericMessage {
     relatedTo?: string | null;
     type: string;
@@ -581,7 +583,7 @@ export function getOrderSignalInfoFull(signal: Message, groupedSignals: { [key: 
         ? order.targets.length
         : Math.max(...tpsAsInt.concat([0]));
 
-    const lev = order.leverage ?? 1;
+    const lev = getLeverage(order.leverage ?? 1);
 
     const orderTps = order.targets.map(x => x);
     const avgTpValue = orderTps.filter((x, idx) => idx + 1 <= maxReachedTp)
@@ -658,7 +660,7 @@ export function updateOrderDetailWithSL(orderDetail: OrderDetail, sl: StopLoss) 
     const entries = orderDetail.order.entry;
     const avgEntryPrice = entries.reduce((sum: any, entry: any) => entry + sum, 0) / entries.length;
     const maxReachedEntry = entries.length;
-    const lev = orderDetail.order.leverage ?? 1;
+    const lev = getLeverage(orderDetail.order.leverage ?? 1);
 
     const sumLossPct = Math.abs((orderDetail.order.stopLoss ?? 0) - avgEntryPrice) / avgEntryPrice * lev * 100;
 
@@ -721,7 +723,7 @@ export function mapSLToOrder(slSignal: StopLoss, orderSignals: OrderDetail[], gr
 export function getTPPotentialProfit(orderDetail: OrderDetail): number[] {
     return orderDetail.order.targets.map((tpTarget: number) => {
         const entryPrice = orderDetail.order.entry[0];
-        const lev = orderDetail.order.leverage ?? 1;
+        const lev = getLeverage(orderDetail.order.leverage ?? 1);
 
         return Math.abs(tpTarget - entryPrice) / entryPrice * lev * 100;
     });
@@ -729,7 +731,7 @@ export function getTPPotentialProfit(orderDetail: OrderDetail): number[] {
 
 export function getPotentialLoss(orderDetail: OrderDetail): number {
     const entryPrice = orderDetail.order.entry[0];
-    const lev = orderDetail.order.leverage ?? 1;
+    const lev = getLeverage(orderDetail.order.leverage ?? 1);
     const sl = orderDetail.order.stopLoss ?? 0;
 
     return Math.abs(entryPrice - sl) / entryPrice * lev * 100 * -1;
