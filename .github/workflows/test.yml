@@ -1,0 +1,58 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+# This workflow will install Deno then run `deno lint` and `deno test`.
+# For more information see: https://github.com/denoland/setup-deno
+
+name: Test
+
+on:
+  push:
+    branches-ignore:
+      - 'master'
+    tags-ignore:
+      - "v*.*.*"
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  os_matrix:
+    concurrency:
+      group: ci-build-analysis-${{ github.ref }}
+      cancel-in-progress: true
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+    runs-on: ${{ matrix.os }}
+    env:
+      DENO_DIR: my_cache_directory
+    steps:
+      - name: Cache Deno dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.DENO_DIR }}
+          key: ${{ secrets.CACHE_VERSION }}-${{ hashFiles('deno.lock') }}
+
+      - name: Setup repo
+        uses: actions/checkout@v3
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1.1.2
+        #uses: denoland/setup-deno@61fe2df320078202e33d7d5ad347e7dcfa0e8f31  # v1.1.2
+        with:
+          deno-version: v1.x
+
+      # Uncomment this step to verify the use of 'deno fmt' on each commit.
+      # - name: Verify formatting
+      #   run: deno fmt --check
+
+#      TODO: Fix linting issues and run later
+#      - name: Run linter
+#        run: deno lint
+
+      - name: Run tests
+        run: deno test -A
