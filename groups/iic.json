@@ -1,0 +1,27 @@
+﻿{
+  "preprocessing": [
+    {
+      "pattern": "\\+",
+      "replacement": " "
+    },
+    {
+      "pattern": "\\$",
+      "replacement": ""
+    },
+    {
+      "pattern": "\\(market\\)",
+      "replacement": ""
+    }
+  ],
+  "patternsToIgnore": [
+    "/Period/sui",
+    "/put stop at entry/sui",
+    "/Days|minutes|hours/sui",
+    "/enjoy|closed? half/sui"
+  ],
+  "patterns": [
+    "/#(?<coin>\\S+)\\s*(?<direction>long|short|sell|buy).*Leverage\\s*:\\s*(?<leverageType>isolated|cross)\\s*\\((?<leverage>[\\d.]+)x\\).*Entry(?: Zone)?\\s*:\\s*(?<entry>[\\d -.\\nÂ ]+)[\\s\\n\\\\n]*Stop ?loss\\s*:\\s*(?<sl>[\\d.]+).*(?:TP|Targets)\\s*:\\s*(?<targets>[\\d. -]+)/sui",
+    "/#(?<coin>\\S+)\\s*(?<direction>long|short|sell|buy).*Leverage\\s*:\\s*(?<leverageType>isolated|cross)\\s*\\((?<leverage>[\\d.]+)x\\).*(?:Entry|Entries)(?: Zone)?\\s*:\\s*(?<entry>[\\d -.\\nÂ ]+)[\\s\\n\\\\n]*(?:Stop ?loss|sl)\\s*:\\s*(?<sl>[\\d.]+).*(?:TP|Targets)\\s*:\\s*(?<targets>[\\d. -]+)/sui",
+    "/#(?<coin>\\S+)\\s*(?<direction>long|short|sell|buy).*Leverage\\s*:\\s*(?<leverageType>isolated|cross)?\\s*\\(?(?<leverage>[\\d.]+)x\\)?\\s*(?:Entry|Entries|Entry Zone)?\\s*:?\\s*(?<entry>[\\d -\\.\\nÂ ]+)[\\s\\n\\\\n]*(?:Stop ?loss|sl)\\s*:\\s*(?<sl>[\\d.]+).*(?:TP|Targets)\\s*:?\\s*(?<targets>[\\d. -]+)/sui"
+  ]
+}
