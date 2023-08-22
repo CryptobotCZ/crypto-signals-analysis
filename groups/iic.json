@@ -1,6 +1,14 @@
 {
   "preprocessing": [
     {
+      "pattern": " ",
+      "replacement": " "
+    },
+    {
+      "pattern": "\\s+",
+      "replacement": " "
+    },
+    {
       "pattern": " : - ",
       "replacement": ": "
     },
@@ -31,10 +39,16 @@
       }
     },
     {
-      "pattern": "/(?<coin>[\\w\\/]+).*(?<direction>short|long).*Leverage:\\s*(?:(?:cross|isolated)\\s*)*(?<leverage>\\d+)[хX].*Entries: (?<entry>[\\d*\\. --]+)(?:.*?)Targets: . (?<takeProfits>[ \\d,]+)\\s*.Stop loss: (?<sl>[\\d.]+)/sui",
+      "pattern": "/(?<coin>[\\w\\/]+).*(?<direction>short|long).*Leverage:\\s*(?:(?:cross|isolated)\\s*)*(?<leverage>\\d+)[хX].*Entries: (?<entry>[\\d*\\. --]+)(?:.*?)Targets: . (?<takeProfits>[ \\d,.]+)\\s*.Stop loss: (?<sl>[\\d.]+)/sui",
       "subpattern": {
         "entry": "/([\\d.]+)/g",
         "takeProfits": "/, (?<targetValue>[\\d.]+)/g"
+      }
+    },
+    {
+      "pattern": "/(?<coin>[\\w\\/]+).*(?<direction>short|long)*.*Leverage:\\s*(?:(?:cross|isolated)\\s*)*(?<leverage>\\d+)[хX].*Entry: (?<entry>[\\d*\\. --]+).*Stop ?loss: (?<sl>[\\d.]+)(?:.*?).*?(?<takeProfits>(?:TP \\d: [ \\d,.]+)+)\\s*./siu",
+      "subpattern": {
+        "takeProfits": "/: (?<targetValue>[\\d.]+)/g"
       }
     }
   ]
