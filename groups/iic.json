@@ -1,16 +1,12 @@
-﻿{
+{
   "preprocessing": [
     {
-      "pattern": "\\+",
-      "replacement": " "
+      "pattern": " : - ",
+      "replacement": ": "
     },
     {
-      "pattern": "\\$",
-      "replacement": ""
-    },
-    {
-      "pattern": "\\(market\\)",
-      "replacement": ""
+      "pattern": " : ",
+      "replacement": ": "
     }
   ],
   "patternsToIgnore": [
@@ -20,8 +16,26 @@
     "/enjoy|closed? half/sui"
   ],
   "patterns": [
-    "/#(?<coin>\\S+)\\s*(?<direction>long|short|sell|buy).*Leverage\\s*:\\s*(?<leverageType>isolated|cross)\\s*\\((?<leverage>[\\d.]+)x\\).*Entry(?: Zone)?\\s*:\\s*(?<entry>[\\d -.\\nÂ ]+)[\\s\\n\\\\n]*Stop ?loss\\s*:\\s*(?<sl>[\\d.]+).*(?:TP|Targets)\\s*:\\s*(?<targets>[\\d. -]+)/sui",
-    "/#(?<coin>\\S+)\\s*(?<direction>long|short|sell|buy).*Leverage\\s*:\\s*(?<leverageType>isolated|cross)\\s*\\((?<leverage>[\\d.]+)x\\).*(?:Entry|Entries)(?: Zone)?\\s*:\\s*(?<entry>[\\d -.\\nÂ ]+)[\\s\\n\\\\n]*(?:Stop ?loss|sl)\\s*:\\s*(?<sl>[\\d.]+).*(?:TP|Targets)\\s*:\\s*(?<targets>[\\d. -]+)/sui",
-    "/#(?<coin>\\S+)\\s*(?<direction>long|short|sell|buy).*Leverage\\s*:\\s*(?<leverageType>isolated|cross)?\\s*\\(?(?<leverage>[\\d.]+)x\\)?\\s*(?:Entry|Entries|Entry Zone)?\\s*:?\\s*(?<entry>[\\d -\\.\\nÂ ]+)[\\s\\n\\\\n]*(?:Stop ?loss|sl)\\s*:\\s*(?<sl>[\\d.]+).*(?:TP|Targets)\\s*:?\\s*(?<targets>[\\d. -]+)/sui"
+    {
+      "pattern": "/(?<coin>[\\w\\/]+).*(?<direction>short|long).*Leverage:\\s*(?<leverage>\\d+)[хX].*Entry: (?<entry>[\\d*\\. --]+)\\s*(?<takeProfits>(?:. Target \\d+: [\\d.]+\\s*)+)\\s*.⭕\uFE0F STOP: (?<sl>[\\d.]+)/sui",
+      "subpattern": {
+        "entry": "/([\\d.]+)/g",
+        "takeProfits": "/: (?<targetValue>[\\d.]+)/g"
+      }
+    },
+    {
+      "pattern": "/(?<coin>[\\w\\/]+).*(?<direction>short|long).*Leverage:\\s*(?:(?:cross|isolated)\\s*)*(?<leverage>\\d+)[хX].*Entry: (?<entry>[\\d*\\. --]+)(?:.*?)(?<takeProfits>(?:Target \\d+ - [\\d.]+\\s*)+)\\s*.Stop loss: (?<sl>[\\d.]+)/sui",
+      "subpattern": {
+        "entry": "/([\\d.]+)/g",
+        "takeProfits": "/- (?<targetValue>[\\d.]+)/g"
+      }
+    },
+    {
+      "pattern": "/(?<coin>[\\w\\/]+).*(?<direction>short|long).*Leverage:\\s*(?:(?:cross|isolated)\\s*)*(?<leverage>\\d+)[хX].*Entries: (?<entry>[\\d*\\. --]+)(?:.*?)Targets: . (?<takeProfits>[ \\d,]+)\\s*.Stop loss: (?<sl>[\\d.]+)/sui",
+      "subpattern": {
+        "entry": "/([\\d.]+)/g",
+        "takeProfits": "/, (?<targetValue>[\\d.]+)/g"
+      }
+    }
   ]
 }
