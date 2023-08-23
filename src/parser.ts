@@ -751,7 +751,13 @@ export function getMaxPotentialProfit(orderDetail: OrderDetail): number {
 export function parseMessagePipeline(messageDiv: HTMLElement, pipeline: PartialParser[]): Message {
     const messageId = messageDiv.getAttribute('id')!;
     const date = parseDate((messageDiv.getElementsByClassName('date')?.[0] as HTMLElement)?.getAttribute('title') ?? '');
-    const message = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim();
+    const textDiv = messageDiv.getElementsByClassName('text')?.[0] as HTMLElement;
+    let message = textDiv?.innerText?.trim();
+
+    if (textDiv != null) {
+        textDiv.innerHTML = textDiv?.innerHTML?.replaceAll('<br>', "<br>\n");
+        message = textDiv?.innerText?.trim();
+    }
 
     const result = pipeline.reduce((previous: any, parser) => {
         return previous ?? parser(messageDiv);
