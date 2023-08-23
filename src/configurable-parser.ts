@@ -49,6 +49,7 @@ interface ParserConfig {
 }
 
 let parserConfig: ParserConfig = {} as any;
+let argv = null;
 
 export function getNumbers(message: string) {
     const numbers = [ ...message?.matchAll(/[\d.,]+/g) ];
@@ -86,17 +87,19 @@ export function parseTargets(targetsStr: string) {
 }
 
 
-export function parseOrderString(message: string): Partial<Order> | null {
+export function parseOrderString(message: string, config?: ParserConfig): Partial<Order> | null {
+    config ??= parserConfig;
+
     if (!looksLikeOrder(message)) {
         return null;
     }
 
-    const preprocessors = parserConfig.preprocessing ?? [];
+    const preprocessors = config.preprocessing ?? [];
     for (const preProcess of preprocessors) {
         message = message.replaceAll(new RegExp(preProcess.pattern, 'g'), preProcess.replacement);
     }
 
-    const allPatterns = parserConfig.patterns ?? [];
+    const allPatterns = config.patterns ?? [];
     const simplePatterns = allPatterns.filter(x => typeof x === 'string' || !Object.hasOwn(x, 'subpattern')) as BaseRegexPattern[]
     const complexPatterns = allPatterns.filter(x => typeof x === 'object' && Object.hasOwn(x, 'subpattern')) as RegexPatternWithSubpattern[];
 
@@ -121,8 +124,15 @@ export function parseOrderStringFromSimplePatterns(message: string, patterns: Ba
 
 export function getRegExpObject(pattern: BaseRegexPattern): RegExp {
     if (typeof pattern === 'string') {
-        const parts = pattern.split('/');
-        return new RegExp(parts[1], parts?.[2] ?? undefined);
+        let flags = undefined;
+
+        const lastSlash = pattern.lastIndexOf('/');
+        if (pattern[0] === '/' && lastSlash !== 0) {
+            flags = pattern.substring(lastSlash + 1);
+            pattern = pattern.substring(1, lastSlash);
+        }
+
+        return new RegExp(pattern, flags);
     } else if (!Object.hasOwn(pattern, 'flags')) {
         return getRegExpObject(pattern.pattern);
     } else {
@@ -144,7 +154,7 @@ export function parseOrderStringFromPatternWithSubpatterns(message: string, patt
         const groups = ['coin', 'entry', 'takeProfits', 'sl', 'leverage', 'exchange', 'direction', ];
 
         // fck TS, these dances around reduce to make it type-check are tedious...
-        const result = groups.reduce((key: any, result: any) => {
+        const result = groups.reduce((result, key) => {
             const strToMatch = match.groups?.[key];
             result[key] = strToMatch;
 
@@ -160,16 +170,16 @@ export function parseOrderStringFromPatternWithSubpatterns(message: string, patt
                 }
             }
 
-            return result as any;
-        }, {} as Record<string, any>) as Record<string, any>;
+            return result as Record<string, any>;
+        }, {} as Record<string, any>);
 
         result.exchange ??= null;
         result.leverage ??= 1;
 
-        const targets = result?.targets ?? [];
+        const targets = result?.targets ?? result?.takeProfits ?? [];
         const coin = result?.coin?.trim()?.toUpperCase();
         const entry = result?.entry ?? [];
-        const stopLoss = result?.sl ?? null;
+        const stopLoss = result?.sl != null ? parseFloat(result?.sl) : null;
 
         const directionText = result?.direction
             ?.replace(/sell/i, 'short')
@@ -236,7 +246,15 @@ export function parseOrderStringPositional(message: string) {
 }
 
 export function parseOrder(messageDiv: HTMLElement): Partial<Order> | null {
-    const text = (messageDiv.getElementsByClassName('text')?.[0] as HTMLElement)?.innerText?.trim() ?? '';
+    const textDiv = messageDiv.getElementsByClassName('text')?.[0] as HTMLElement;
+
+    if (textDiv == null) { 
+        return null;
+    }
+
+    textDiv.innerHTML = textDiv?.innerHTML?.replaceAll('<br>', "<br>\n");
+    const text = textDiv?.innerText?.trim() ?? '';
+
     return parseOrderString(text);
 }
 
