@@ -1,0 +1,43 @@
+{
+  "name": "Crypto Trading Club",
+  "shortcut": "crypto-trading-club",
+  "preprocessing": [
+    {
+      "pattern": "(?<min>[\\d.]+) \\(with a (?:maximum|minimum) value of (?<max>[\\d.]+)\\)",
+      "replacement": "$<max> - $<min>"
+    },
+    {
+      "pattern": "\\s+",
+      "replacement": " "
+    },
+    {
+      "pattern": " : - ",
+      "replacement": ": "
+    },
+    {
+      "pattern": " : ",
+      "replacement": ": "
+    }
+  ],
+  "patternsToIgnore": [
+    "/CRYPTO MARKETS ANALYSIS/sui",
+    "/Last signals summary/sui",
+    "/Start of the week summary/sui"
+  ],
+  "patterns": [
+    {
+      "pattern": "/(?<coin>[\\w\\/]+).*(?<direction>short|long|buy|sell)*\\s*Enter.*?: (?<entry>[\\d*\\. --]+)\\s*(?<takeProfits>(?:.TP\\d+ [ \\d,.]+)+).*SL (?<sl>[\\d.]+).*Leverage:?.*?(?<leverage>\\d+)[хX]/sui",
+      "subpattern": {
+        "entry": "/([\\d.]+)/g",
+        "takeProfits": "/TP\\d+ (?<targetValue>[\\d.]+)/g"
+      }
+    },
+    {
+      "pattern": "/(?<coin>[\\w\\/]+).*Enter.*?: (?<entry>[\\d*\\. --]+)\\s*.(?<direction>short|long|buy|sell)*\\s*(?<takeProfits>(?:.TP\\d+ [ \\d,.]+)+).*SL (?<sl>[\\d.]+).*Leverage:?.*?(?<leverage>\\d+)[хX]/sui",
+      "subpattern": {
+        "entry": "/([\\d.]+)/g",
+        "takeProfits": "/TP\\d+ (?<targetValue>[\\d.]+)/g"
+      }
+    }
+  ]
+}
