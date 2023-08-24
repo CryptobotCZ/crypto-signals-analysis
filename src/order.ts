@@ -13,6 +13,24 @@ export interface Order {
     config?: any;
 }
 
+export function getOrderSl(order: ParserOrder): number {
+    if (typeof order.stopLoss === 'number') {
+        return order.stopLoss;
+    } else if (typeof order.stopLoss === 'string') {
+        if (order.stopLoss.indexOf('%') > -1) {
+            // TODO: Add SL parsing and calculation
+            return 0;
+        } else {
+            const parsed = parseFloat(order.stopLoss);
+            return isNaN(parsed) 
+                ? 0
+                : parsed;
+        }
+    }
+
+    return 0;
+}
+
 export function validateOrder(order: ParserOrder) {
     const isArraySortedAsc = (arr: number[]) => arr.every((v, i, a) => !i || a[i-1] <= v);
     const isArraySortedDesc = (arr: number[]) => arr.every((v, i, a) => !i || a[i-1] >= v);

@@ -1,6 +1,6 @@
 import { Cancel, Close, Entry, EntryAll, Message, Opposite, Order, OrderDetail, PartialParser, SLAfterTP, SignalUpdate, StopLoss, TakeProfit, TakeProfitAll, getReferencedMessageId, parseDate } from "./parser.ts";
 import { parseMessagePipeline } from "./parser.ts";
-import {getLeverage} from "./order.ts";
+import {getLeverage, getOrderSl} from "./order.ts";
 
 export function parseOrderUpdate(messageDiv: HTMLElement): Partial<SignalUpdate> | null {
     const pattern = /⚡/g;
@@ -38,7 +38,7 @@ export function parseOrderString(message: string): Partial<Order> | null {
   for (const parser of parsers) {
     const result = parser(message);
 
-    if (result != null && (result?.stopLoss ?? 0) > 0) {
+    if (result != null && typeof result?.stopLoss !== 'string' && (result?.stopLoss ?? 0) > 0) {
       return result;
     }
 
@@ -633,7 +633,8 @@ export function getOrderSignalInfoFull(signal: Message, groupedSignals: { [key: 
     const sumProfitPct = orderTps.filter((x, idx) => idx + 1 <= maxReachedTp)
         .reduce((sum, x) => sum + Math.abs(x - avgEntryPrice), 0) / Math.max(maxReachedTp, 1) / avgEntryPrice * lev * 100;
 
-    const sumLossPct = Math.abs((order.stopLoss ?? 0) - avgEntryPrice) / avgEntryPrice * lev * 100;
+    const stopLossNumber = getOrderSl(order);
+    const sumLossPct = Math.abs(stopLossNumber - avgEntryPrice) / avgEntryPrice * lev * 100;
 
     const pnl = tps.length === 0 && sl.length > 0
         ? -sumLossPct

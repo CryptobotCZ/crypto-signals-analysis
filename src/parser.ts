@@ -1,4 +1,4 @@
-import {getLeverage} from "./order.ts";
+import {getLeverage, getOrderSl} from "./order.ts";
 
 export interface GenericMessage {
     relatedTo?: string | null;
@@ -21,7 +21,7 @@ export interface Order extends GenericMessage {
     targets: number[];
     shortTermTargets?: number[];
     midTermTargets?: number[];
-    stopLoss: number | null;
+    stopLoss: number | string | null;
     config?: any;
 }
 
@@ -594,7 +594,8 @@ export function getOrderSignalInfoFull(signal: Message, groupedSignals: { [key: 
     const sumProfitPct = orderTps.filter((x, idx) => idx + 1 <= maxReachedTp)
         .reduce((sum, x) => sum + Math.abs(x - avgEntryPrice), 0) / Math.max(maxReachedTp, 1) / avgEntryPrice * lev * 100;
 
-    const sumLossPct = Math.abs((order.stopLoss ?? 0) - avgEntryPrice) / avgEntryPrice * lev * 100;
+    const stopLossNumber = getOrderSl(order);
+    const sumLossPct = Math.abs(stopLossNumber - avgEntryPrice) / avgEntryPrice * lev * 100;
 
     const pnl = maxReachedTp === 0 && sl.length > 0
         ? -sumLossPct
@@ -664,7 +665,8 @@ export function updateOrderDetailWithSL(orderDetail: OrderDetail, sl: StopLoss) 
     const maxReachedEntry = entries.length;
     const lev = getLeverage(orderDetail.order.leverage ?? 1);
 
-    const sumLossPct = Math.abs((orderDetail.order.stopLoss ?? 0) - avgEntryPrice) / avgEntryPrice * lev * 100;
+    const stopLossNumber = getOrderSl(orderDetail.order);
+    const sumLossPct = Math.abs(stopLossNumber - avgEntryPrice) / avgEntryPrice * lev * 100;
 
     const pnl = -sumLossPct;
 
@@ -739,7 +741,7 @@ export function getTPPotentialProfit(orderDetail: OrderDetail): number[] {
 export function getPotentialLoss(orderDetail: OrderDetail): number {
     const entryPrice = orderDetail.order.entry[0];
     const lev = getLeverage(orderDetail.order.leverage ?? 1);
-    const sl = orderDetail.order.stopLoss ?? 0;
+    const sl = getOrderSl(orderDetail.order);
 
     return Math.abs(entryPrice - sl) / entryPrice * lev * 100 * -1;
 }
