@@ -110,7 +110,13 @@ export function parseSpotOrder(message: string): Partial<Order> | null {
         };
 
         const getSlValue = (sl: string) => {
-            return parseFloat(sl?.replaceAll(/\d+\)\s+/g, ''));
+            const textSl = sl?.replaceAll(/\d+\)\s+/g, '');
+
+            if (textSl.indexOf('%') !== -1) {
+                return textSl;
+            }
+
+            return parseFloat(textSl);
         };
 
         const targets = getTargetValues(match.groups?.takeProfits ?? '');
