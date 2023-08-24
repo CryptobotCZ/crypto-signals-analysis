@@ -2,7 +2,7 @@ import { DB } from 'https://deno.land/x/sqlite@v3.7.2/mod.ts';
 import { createSignal, createSignalConfigEntry, createSignalConfigTp, createSignalReachedEntry, createSignalReachedTp, getOrCreateChannelId } from "../database.ts";
 import { getMaxPotentialProfit, getPotentialLoss } from "../parser.ts";
 import { parse } from "./parse.ts";
-import { getLeverage } from "../order.ts";
+import {getLeverage, getOrderSl} from "../order.ts";
 
 export async function importData(inputFiles: string[], channel: string, db: DB) {
     const parsedData = await parse(inputFiles, channel);
@@ -24,7 +24,7 @@ export async function importData(inputFiles: string[], channel: string, db: DB) 
                 leverage: getLeverage(order.order.leverage),
                 leverage_type: null, // 'isolated',
                 status: order.closed ? 'closed' : 'open',
-                stoploss: order.order.stopLoss,
+                stoploss: getOrderSl(order.order),
                 max_loss: getPotentialLoss(order),
                 max_profit: getMaxPotentialProfit(order),
                 pnl: order.pnl,

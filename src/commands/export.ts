@@ -104,7 +104,7 @@ async function exportJson(orderDetails: OrderDetail[], path: string, withOrderCo
       exchange: order.order.exchange,
       entries: order.order.entry,
       tps: order.order.targets,
-      sl: order.order.stopLoss,
+      sl: order.order.stopLoss as any,
       events: order.events.map(mapToExportedEvent),
       ...({ config: (withOrderConfig ? order.order.config : undefined) }),
     };
