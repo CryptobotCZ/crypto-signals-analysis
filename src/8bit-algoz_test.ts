@@ -1,7 +1,7 @@
 ﻿import {
     assertEquals,
     assertNotEquals,
-} from "https://deno.land/std@0.188.0/testing/asserts.ts";
+} from "../dev_deps.ts";
 import { parseOrderString } from "./8bit-algoz.ts";
 
 Deno.test(function parseOrderStringHandlesAllFormats() {

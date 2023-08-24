@@ -1,4 +1,4 @@
-import { DB } from "https://deno.land/x/sqlite@v3.7.2/mod.ts";
+import { DB } from "../deps.ts";
 import { up } from "./migrations/01-create-db.ts";
 
 const latestVersion = 1;

@@ -1,6 +1,4 @@
-import { Schema } from "https://deno.land/x/cotton@v0.7.5/mod.ts";
-import { DB } from "https://deno.land/x/sqlite@v3.7.2/mod.ts";
-
+import { DB } from "../../deps.ts";
 export async function up(db: DB) {
     db.execute(`
         CREATE TABLE IF NOT EXISTS db_version (

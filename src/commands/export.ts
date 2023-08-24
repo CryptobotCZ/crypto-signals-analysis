@@ -1,4 +1,4 @@
-import { writeJson } from "https://deno.land/x/jsonfile/mod.ts";
+import { writeJson } from "../../deps.ts";
 
 import { OrderDetail, getPotentialLoss, getTPPotentialProfit, groupRelatedOrders, getOrderKey } from "../parser.ts";
 import { parse } from "./parse.ts";

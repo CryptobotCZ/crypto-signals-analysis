@@ -1,4 +1,4 @@
-import { assertEquals, assertNotEquals } from "https://deno.land/std@0.188.0/testing/asserts.ts";
+import { assertEquals, assertNotEquals } from "../dev_deps.ts";
 import { parseOrderString } from "./wallstreet_queen.ts";
 
 Deno.test(function parseOrderStringHandlesAllFormats() {

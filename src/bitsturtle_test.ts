@@ -1,4 +1,4 @@
-import { assertEquals } from "https://deno.land/std@0.188.0/testing/asserts.ts";
+import { assertEquals } from "../dev_deps.ts";
 import { parseEntryString, parseOrderString, parseTPString } from "./bitsturtle.ts";
 
 Deno.test(function parseOrderStringHandlesAllFormats() {
