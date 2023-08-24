@@ -21,7 +21,7 @@ Deno.test(function parseOrderStringReturnsCorrectResults() {
             text: '👽 8BIT SIGNAL 👽\n\nSymbol: ️#HOT/USDT ️️\nLeverage: 5X\nEntry Zone: 0.00131-0.00123\nTake Profit Targets:\n1) 0.001333 - 12.5%\n2) 0.00134 - 12.5%\n3) 0.001353 - 12.5%\n4) 0.001366 - 12.5%\n5) 0.00138 - 12.5%\n6) 0.001393 - 12.5%\n7) 0.001406 - 12.5%\n8) 0.001419 - 12.5%\nStop Targets:\n1) 0.00120\n\nCopy signals and make money from trading with:\n@Eight_Bit_Algoz ™ 👾👾',
             expected: {
                 coin: "HOT/USDT",
-                direction: null,
+                direction: undefined,
                 exchange: null,
                 leverage: 5,
                 entry: [

@@ -36,6 +36,33 @@ Deno.test(function parseOrderStringReturnsCorrectResults() {
                 ],
                 type: "order",
                 stopLoss: 0.3995,
+                config: {
+                    tps: [
+                    {
+                        percentage: 12.5,
+                    },
+                    {
+                        percentage: 12.5,
+                    },
+                    {
+                        percentage: 12.5,
+                    },
+                    {
+                        percentage: 12.5,
+                    },
+                    {
+                        percentage: 12.5,
+                    },
+                    {
+                        percentage: 12.5,
+                    },
+                    {
+                        percentage: 12.5,
+                    },
+                    {
+                        percentage: 12.5,
+                    }
+                ]},
             },
         },
     ];

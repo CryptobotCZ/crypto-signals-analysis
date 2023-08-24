@@ -18,32 +18,52 @@ Deno.test(function parseOrderStringHandlesAllFormats() {
 Deno.test(function parseOrderStringReturnsCorrectResults() {
   const strings = [
     {
-      text:
-        "Consider Buying some #EGLD here For Short term.\n\nLooking Bullish here after break. Can show some Bullish move in Short term.\n\nEntry: Around 41.45$ - 40.50$\n\nTargets: 42.20$,43.00$,43.80$,44.80$,46.00$,48.00$\n\nStoploss: 39.50$\n\nLeverage: 5x-10x\n\nDo manage your risk well as market is uncertain this days.",
+      text: "Consider Buying some #EGLD here For Short term.\n\nLooking Bullish here after break. Can show some Bullish move in Short term.\n\nEntry: Around 41.45$ - 40.50$\n\nTargets: 42.20$,43.00$,43.80$,44.80$,46.00$,48.00$\n\nStoploss: 39.50$\n\nLeverage: 5x-10x\n\nDo manage your risk well as market is uncertain this days.",
       expected: {
-        coin: "GMT/USDT",
-        direction: "SHORT",
-        exchange: "5-10",
+        coin: "EGLD/USDT",
+        direction: "LONG",
+        exchange: null,
         leverage: 10,
         entry: [
-          0.4222,
-          0.4350,
+          41.45,
+          40.50
         ],
-        stopLoss: 0.4450,
+        stopLoss: 39.5,
         targets: [
-          0.4150,
-          0.4070,
-          0.4000,
-          0.3900,
-          0.3800,
-          0.3700,
+          42.2,
+          43,
+          43.8,
+          44.8,
+          46,
+          48,
         ],
         type: "order",
       },
     },
     {
-      text:
-        "Consider Selling some #LIT here For Short term.\n\nLooking Bearsish here after break. Can show some Bearsish move in Short term.\n\nEntry: Around 1.090$ - 1.140$\n\nTargets: 1.060$,1.040$,1.020$,1.000$,0.950$,0.910$,0.880$,0.850$\n\nStoploss: 1.180$\n\nLeverage: 5x-10x\n\nDo manage your risk well as market is uncertain this days.",
+      text: "Consider Selling some #LIT here For Short term.\n\nLooking Bearsish here after break. Can show some Bearsish move in Short term.\n\nEntry: Around 1.090$ - 1.140$\n\nTargets: 1.060$,1.040$,1.020$,1.000$,0.950$,0.910$,0.880$,0.850$\n\nStoploss: 1.180$\n\nLeverage: 5x-10x\n\nDo manage your risk well as market is uncertain this days.",
+      expected: {
+          coin: "LIT/USDT",
+          direction: "SHORT",
+          entry: [
+            1.09,
+            1.14,
+          ],
+          exchange: null,
+          leverage: 10,
+          stopLoss: 1.18,
+          targets: [
+            1.06,
+            1.04,
+            1.02,
+            1,
+            0.95,
+            0.91,
+            0.88,
+            0.85,
+          ],
+          type: "order",
+        }
     },
   ];
 
