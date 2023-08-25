@@ -20,9 +20,7 @@ import {
     parseTPAll, parseTPWithoutProfit
 } from "./generic.ts";
 import {validateOrder} from "./order.ts";
-
-const savedConfigurations = [];
-let mode = 'number';
+import * as path from "https://deno.land/std@0.188.0/path/mod.ts";
 
 type BaseRegexPattern = string | { pattern: string } | { pattern: string, flags: string };
 type RegexPatternWithSubpattern = BaseRegexPattern & { subpattern: Subpattern };
@@ -43,37 +41,16 @@ export type Preprocessor = {
 };
 
 interface ParserConfig {
+    name: string;
+    shortcut: string;
     preprocessing?: Preprocessor[];
     patterns: RegexPattern[];
     patternsToIgnore: BaseRegexPattern[];
 }
 
-let parserConfig: ParserConfig = {} as any;
-let argv = null;
-
 export function getNumbers(message: string) {
     const numbers = [ ...message?.matchAll(/[\d.,]+/g) ];
     return numbers.map(x => parseFloat(x?.[0]?.trim() ?? '')); // EP, TP, SL
-}
-
-export function looksLikeOrder(message: string): boolean {
-    const patternsToIgnore = parserConfig?.patternsToIgnore ?? [];
-    for (const pattern of patternsToIgnore) {
-        const regex = getRegExpObject(pattern);
-
-        if (message?.match(regex)) {
-            return false;
-        }
-    }
-
-    const numbers = getNumbers(message);
-    const enoughNumbers = numbers.length >= 3; // EP, TP, SL
-
-    if ((message?.match(/entry|leverage|lev/gusi) && message?.match(/stoploss|stop|loss|sl/gusi))) {
-         return enoughNumbers;
-    }
-
-    return false;
 }
 
 export function parseTargets(targetsStr: string) {
@@ -84,28 +61,6 @@ export function parseTargets(targetsStr: string) {
     }));
 
     return targetMatches.map((x) => x.value);
-}
-
-
-export function parseOrderString(message: string, config?: ParserConfig): Partial<Order> | null {
-    config ??= parserConfig;
-
-    if (!looksLikeOrder(message)) {
-        return null;
-    }
-
-    const preprocessors = config.preprocessing ?? [];
-    for (const preProcess of preprocessors) {
-        message = message.replaceAll(new RegExp(preProcess.pattern, 'g'), preProcess.replacement);
-    }
-
-    const allPatterns = config.patterns ?? [];
-    const simplePatterns = allPatterns.filter(x => typeof x === 'string' || !Object.hasOwn(x, 'subpattern')) as BaseRegexPattern[]
-    const complexPatterns = allPatterns.filter(x => typeof x === 'object' && Object.hasOwn(x, 'subpattern')) as RegexPatternWithSubpattern[];
-
-    return parseOrderStringFromSimplePatterns(message, simplePatterns)
-        ?? parseOrderStringFromPatternWithSubpatterns(message, complexPatterns)
-        ?? { type: 'probablyOrder' as any, text: message } as any;
 }
 
 export function parseOrderStringFromSimplePatterns(message: string, patterns: BaseRegexPattern[]) {
@@ -245,41 +200,6 @@ export function parseOrderStringPositional(message: string) {
     };
 }
 
-export function parseOrder(messageDiv: HTMLElement): Partial<Order> | null {
-    const textDiv = messageDiv.getElementsByClassName('text')?.[0] as HTMLElement;
-
-    if (textDiv == null) { 
-        return null;
-    }
-
-    textDiv.innerHTML = textDiv?.innerHTML?.replaceAll('<br>', "<br>\n");
-    const text = textDiv?.innerText?.trim() ?? '';
-
-    return parseOrderString(text);
-}
-
-export function parseMessage(messageDiv: HTMLElement): Message {
-    const pipeline: PartialParser[] = [
-        parseOrder,
-        parseEntry,
-        parseEntryAll,
-        parseClose,
-        parseOpposite,
-        parseSLAfterTP,
-        parseSL,
-        parseTP,
-        parseTPAll,
-        parseCancelled,
-        parseTPWithoutProfit,
-    ];
-
-    return parseMessagePipeline(messageDiv, pipeline);
-}
-
-export function getAllMessages(): Message[] {
-    return parserGetAllMessages(parseMessage);
-}
-
 export function getFileContent<T>(path: string): T {
     const isReadableFile = fs.existsSync(path, {
         isReadable: true,
@@ -304,7 +224,139 @@ export function getConfigurableParser(config?: any) {
         console.error('Missing parseConfigPath');
     }
 
-    parserConfig = getFileContent(config.parserConfigPath);
+    return () => {
+        const parserConfig: ParserConfig = getFileContent(config.parserConfigPath);
+        const configurableParser = new ConfigurableParser(parserConfig);
 
-    return getAllMessages;
+        return configurableParser.getAllMessages();
+    };
+}
+
+export const configurableParsers = new Map<string, ConfigurableParser>();
+
+export async function loadConfigurableParsers(directory?: string) {
+    const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
+    const allParsers: ConfigurableParser[] = [];
+    const groupsPath = path.join(__dirname, '..', 'groups');
+    const dir = directory ?? groupsPath;
+
+    const isReadableDir = await fs.exists(dir, {
+        isReadable: true,
+        isDirectory: true
+    });
+
+    if (isReadableDir) {
+        for await (const dirEntry of Deno.readDir(dir)) {
+            if (dirEntry.isFile && dirEntry.name.endsWith(".json")) {
+                const parserConfig: ParserConfig = getFileContent(`${dir}/${dirEntry.name}`);
+                const configurableParser = new ConfigurableParser(parserConfig);
+                allParsers.push(configurableParser);
+            }
+        }
+    }
+
+    return allParsers;
+}
+
+export class ConfigurableParser {
+    private readonly parserConfig: ParserConfig;
+
+    get name() {
+        return this.parserConfig?.name;
+    }
+
+    get shortcut() {
+        return this.parserConfig?.shortcut;
+    }
+
+    constructor(parserConfig: ParserConfig) {
+        this.parserConfig = parserConfig;
+    }
+
+    looksLikeOrder(message: string): boolean {
+        const patternsToIgnore = this.parserConfig?.patternsToIgnore ?? [];
+        for (const pattern of patternsToIgnore) {
+            const regex = getRegExpObject(pattern);
+
+            if (message?.match(regex)) {
+                return false;
+            }
+        }
+
+        const numbers = getNumbers(message);
+        const enoughNumbers = numbers.length >= 3; // EP, TP, SL
+
+        if ((message?.match(/entry|leverage|lev/gusi) && message?.match(/stoploss|stop|loss|sl/gusi))) {
+            return enoughNumbers;
+        }
+
+        return false;
+    }
+
+    parseOrderString(message: string, config?: ParserConfig): Partial<Order> | null {
+        config ??= this.parserConfig;
+
+        if (!this.looksLikeOrder(message)) {
+            return null;
+        }
+
+        const preprocessors = config.preprocessing ?? [];
+        for (const preProcess of preprocessors) {
+            message = message.replaceAll(new RegExp(preProcess.pattern, 'g'), preProcess.replacement);
+        }
+
+        const allPatterns = config.patterns ?? [];
+        const simplePatterns = allPatterns.filter(x => typeof x === 'string' || !Object.hasOwn(x, 'subpattern')) as BaseRegexPattern[]
+        const complexPatterns = allPatterns.filter(x => typeof x === 'object' && Object.hasOwn(x, 'subpattern')) as RegexPatternWithSubpattern[];
+
+        return parseOrderStringFromSimplePatterns(message, simplePatterns)
+            ?? parseOrderStringFromPatternWithSubpatterns(message, complexPatterns)
+            ?? { type: 'probablyOrder' as any, text: message } as any;
+    }
+
+    parseOrder(messageDiv: HTMLElement): Partial<Order> | null {
+        const textDiv = messageDiv.getElementsByClassName('text')?.[0] as HTMLElement;
+
+        if (textDiv == null) {
+            return null;
+        }
+
+        textDiv.innerHTML = textDiv?.innerHTML?.replaceAll('<br>', "<br>\n");
+        const text = textDiv?.innerText?.trim() ?? '';
+
+        return this.parseOrderString(text);
+    }
+
+    parseMessage(messageDiv: HTMLElement): Message {
+        const pipeline: PartialParser[] = [
+            this.parseOrder.bind(this),
+            parseEntry,
+            parseEntryAll,
+            parseClose,
+            parseOpposite,
+            parseSLAfterTP,
+            parseSL,
+            parseTP,
+            parseTPAll,
+            parseCancelled,
+            parseTPWithoutProfit,
+        ];
+
+        return parseMessagePipeline(messageDiv, pipeline);
+    }
+
+    getAllMessages(): Message[] {
+        return parserGetAllMessages(this.parseMessage.bind(this));
+    }
+}
+
+export async function loadConfigurableParsersInline() {
+    const signals = await loadConfigurableParsers();
+    signals.forEach(x => configurableParsers.set(x.shortcut, x));
+}
+
+export function getAllMessagesFromParser(parser: ConfigurableParser) {
+    return () => {
+        return parser.getAllMessages();
+    };
 }

@@ -6,13 +6,23 @@ import { getDatabaseFromPath } from "./src/database.ts";
 import { parse } from './src/commands/parse.ts';
 import { importData } from "./src/commands/import.ts";
 import { exportFromSource } from './src/commands/export.ts';
+import {
+  configurableParsers,
+  loadConfigurableParsersInline,
+} from "./src/configurable-parser.ts";
 
-const signals = [
+const hardcodedSignals = [
   'altsignals', 'bitsturtle', 'bk-cornix', 'bk-group', 'generic', 'wallstreet-queen',
   'cryptokey', 'binance-master', 'binance-pro', 'rnmkr-free', '8bit-algoz',
   'wallstreet-crypto-trading', 'future-bulls', 'accountant', 'plancton',
   'configurable',
 ];
+
+await loadConfigurableParsersInline();
+
+const configurableSignalShortcuts = [ ...configurableParsers.keys() ];
+
+const signals = [ ...configurableSignalShortcuts, ...hardcodedSignals ];
 
 const addSignalsArgs = (yargs: any) => {
   yargs.option('signals', {

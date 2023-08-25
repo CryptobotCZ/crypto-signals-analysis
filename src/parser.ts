@@ -1,5 +1,7 @@
 import {getLeverage, getOrderSl} from "./order.ts";
 
+export type GetAllMessagesCallback = () => Message[];
+
 export interface GenericMessage {
     relatedTo?: string | null;
     type: string;

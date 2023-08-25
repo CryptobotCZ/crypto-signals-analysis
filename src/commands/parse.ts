@@ -18,7 +18,7 @@ import { getAllMessages as getWallStreetCryptoTradingMessages } from "../wallstr
 import { getAllMessages as getFutureBullsMessages } from "../future-bulls.ts";
 import { getAllMessages as getAccountantMessages } from "../accountant.ts";
 import { getAllMessages as getPlanktonMessages } from "../plankton.ts";
-import { getConfigurableParser } from "../configurable-parser.ts";
+import { configurableParsers, getAllMessagesFromParser, getConfigurableParser } from "../configurable-parser.ts";
 
 import { OrderDetail, StopLoss, getOrderSignalInfoFull, getOrderSignals, groupRelatedSignals, mapSLToOrder, TakeProfitAll } from "../parser.ts";
 
@@ -88,7 +88,15 @@ export async function parse(directory: string[], group: string, config?: any) {
             const configurableParser = getConfigurableParser(config);
             return configurableParser;
         })
-        .with(_, () => { throw new Error('Invalid group'); })
+        .with(_, () => {
+            if (!configurableParsers.has(group)) {
+                throw new Error('Invalid group');
+            }
+
+            const parser = configurableParsers.get(group)!;
+            const parserFromClass = getAllMessagesFromParser(parser);
+            return parserFromClass;
+        })
         .exhaustive();
 
     const messages = await parseAll(directory, parser);
