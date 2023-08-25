@@ -1,0 +1,28 @@
+{
+  "name": "VIP Coin Signals",
+  "shortcut": "vip-coin-signals",
+  "preprocessing": [
+    {
+      "pattern": "\\s+",
+      "replacement": " "
+    },
+    {
+      "pattern": " : - ",
+      "replacement": ": "
+    },
+    {
+      "pattern": " : ",
+      "replacement": ": "
+    }
+  ],
+  "patternsToIgnore": [],
+  "patterns": [
+    {
+      "pattern": "/(?<direction>short|long|buy|sell)\\s*(?<coin>[\\w\\/]+).*❇\uFE0F Entry:\\s*(?<entry>[\\d*\\. --]+)\\s*(?<takeProfits>(?:☑\uFE0F Target \\d+: [ \\d,.]+\\s*)+).*Stoploss: (?<sl>[\\d.]+).*Leverage:?.*?(?<leverage>\\d+)[хX]/sui",
+      "subpattern": {
+        "entry": "/([\\d.]+)/g",
+        "takeProfits": "/Target \\d+: (?<targetValue>[\\d.]+)/g"
+      }
+    }
+  ]
+}
