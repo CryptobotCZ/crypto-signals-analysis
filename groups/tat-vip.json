@@ -1,0 +1,21 @@
+{
+  "name": "The American Trader",
+  "shortcut": "tat-vip",
+  "preprocessing": [],
+  "patterns": {
+    "order": [
+        {
+          "pattern": "/(?<coin>[\\w\\/]+) (?<direction>short|long) (?<entry>[\\d. ]+).*?TP (?<takeProfits>(?:[\\d. ])+).*?Leverage (?<leverage>[\\d-]+)x.*?SL (?<sl>[\\d.]+)/sui",
+          "subpattern": {
+            "takeProfits": "/(?<targetValue>[\\d.]+)/g",
+            "entry": "/(?<entry>[\\d.]+|cmp)/g"
+          }
+        }
+    ],
+    "close": [
+      {
+        "pattern": "/close/sui"
+      }
+    ]
+  }
+}
