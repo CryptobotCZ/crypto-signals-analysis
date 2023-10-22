@@ -50,6 +50,7 @@ interface ParserConfig {
     preprocessing?: Preprocessor[];
     patterns: MainPattern;
     patternsToIgnore: BaseRegexPattern[];
+    checkOrderFormat?: boolean;
 }
 
 export function getNumbers(message: string) {
@@ -300,7 +301,8 @@ export class ConfigurableParser {
     parseOrderString(message: string, config?: ParserConfig): Partial<Order> | null {
         config ??= this.parserConfig;
 
-        if (!this.looksLikeOrder(message)) {
+        const checkOrderFormat = config?.checkOrderFormat ?? true;
+        if (checkOrderFormat && !this.looksLikeOrder(message)) {
             return null;
         }
 
