@@ -1,0 +1,17 @@
+{
+  "name": "Nova Gold",
+  "shortcut": "nova-gold",
+  "checkOrderFormat": false,
+  "preprocessing": [],
+  "patterns": {
+    "order":  [
+      {
+        "pattern": "/(?<direction>buy|sell) (?<coin>[\\w]+).*?(?<entry>[\\d.]+\\s*-\\s*[\\d.]+).*?\\s*(?:Stoploss|sl)\\s*: (?<sl>[\\d.]+)\\s*(?<takeProfits>((?:TP ?|Take Profit ?)\\d+: ?[\\d.]+\\n*)+)/sui",
+        "subpattern": {
+          "entry": "/([\\d.]+)/g",
+          "takeProfits": "/(?:(?:TP ?|Take Profit ?)\\d+: ?(?<targetValue>[\\d.]+)\\n*)/suig"
+        }
+      }
+    ]
+  }
+}

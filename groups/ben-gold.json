@@ -1,0 +1,17 @@
+{
+  "name": "Ben Gold",
+  "shortcut": "ben-gold",
+  "checkOrderFormat": false,
+  "preprocessing": [],
+  "patterns": {
+    "order":  [
+      {
+        "pattern": "/(?<direction>sell|buy) (?<coin>Gold) @(?<entry>[\\d.]+\\s*-\\s*[\\d.]+)\\s*sl : (?<sl>[\\d.]+)\\s*(?<takeProfits>(?:Tp\\d+ : ?[\\d.]+\\n?)+)/sui",
+        "subpattern": {
+          "entry": "/([\\d.]+)/g",
+          "takeProfits": "/TP\\d+ ?:\\s*(?<targetValue>[\\d.]+)/suig"
+        }
+      }
+    ]
+  }
+}
