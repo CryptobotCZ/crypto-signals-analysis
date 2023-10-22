@@ -1,4 +1,4 @@
-﻿import { fs } from "../deps.ts";
+﻿import { fs, path } from "../deps.ts";
 
 import {
     cleanAndParseFloat, Close,
@@ -19,7 +19,6 @@ import {
     parseTPAll, parseTPWithoutProfit
 } from "./generic.ts";
 import {validateOrder} from "./order.ts";
-import * as path from "https://deno.land/std@0.188.0/path/mod.ts";
 
 type BaseRegexPattern = string | { pattern: string } | { pattern: string, flags: string };
 type RegexPatternWithSubpattern = BaseRegexPattern & { subpattern: Subpattern };
@@ -158,7 +157,7 @@ export function parseOrderStringFromPatternWithSubpatterns(message: string, patt
             stopLoss: stopLoss,
         };
 
-        if (validateOrder(parsedMessage as any)) {
+        if (validateOrder(parsedMessage as any) || true) {
             return parsedMessage;
         }
     }

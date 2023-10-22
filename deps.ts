@@ -7,6 +7,7 @@ export { DB } from "https://deno.land/x/sqlite@v3.7.2/mod.ts";
 export { Schema } from "https://deno.land/x/cotton@v0.7.5/mod.ts";
 import yargs from "https://deno.land/x/yargs@v17.7.2-deno/deno.ts";
 export type { Arguments } from "https://deno.land/x/yargs@v17.7.2-deno/deno-types.ts";
+export * as path from "https://deno.land/std@0.188.0/path/mod.ts";
 
 export default yargs;
 

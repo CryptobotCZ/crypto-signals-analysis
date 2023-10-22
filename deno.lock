@@ -1,5 +1,12 @@
 {
-  "version": "2",
+  "version": "3",
+  "redirects": {
+    "https://deno.land/std/fmt/printf.ts": "https://deno.land/std@0.198.0/fmt/printf.ts",
+    "https://deno.land/std/path/mod.ts": "https://deno.land/std@0.198.0/path/mod.ts",
+    "https://deno.land/std/testing/asserts.ts": "https://deno.land/std@0.198.0/testing/asserts.ts",
+    "https://deno.land/x/yargs/deno-types.ts": "https://deno.land/x/yargs@v17.7.2-deno/deno-types.ts",
+    "https://deno.land/x/yargs/deno.ts": "https://deno.land/x/yargs@v17.7.2-deno/deno.ts"
+  },
   "remote": {
     "https://deno.land/std@0.170.0/node/internal/idna.ts": "3aed89919e3078160733b6e6ac60fdb06052cf0418acbabcf86f90017d102b78",
     "https://deno.land/std@0.170.0/node/punycode.ts": "11b5821448d9e815058a18e5a86ea7abfacc55dca9d444ff27af81069068e2e3",
