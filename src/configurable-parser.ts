@@ -1,16 +1,15 @@
 ﻿import { fs } from "../deps.ts";
 
 import {
-    cleanAndParseFloat,
+    cleanAndParseFloat, Close,
     getAllMessages as parserGetAllMessages,
     Message,
     Order,
-    parseMessagePipeline, parseOrderText,
+    parseMessagePipeline, parseOrderText, parseClose,
     PartialParser,
 } from "./parser.ts";
 import {
     parseCancelled,
-    parseClose,
     parseEntry,
     parseEntryAll,
     parseOpposite,
@@ -35,6 +34,11 @@ interface Subpattern {
     sl?: BaseRegexPattern;
 }
 
+interface MainPattern {
+    order: RegexPattern[];
+    close: RegexPattern[];
+}
+
 export type Preprocessor = {
     pattern: string;
     replacement: string;
@@ -44,7 +48,7 @@ interface ParserConfig {
     name: string;
     shortcut: string;
     preprocessing?: Preprocessor[];
-    patterns: RegexPattern[];
+    patterns: MainPattern;
     patternsToIgnore: BaseRegexPattern[];
 }
 
@@ -305,7 +309,7 @@ export class ConfigurableParser {
             message = message.replaceAll(new RegExp(preProcess.pattern, 'g'), preProcess.replacement);
         }
 
-        const allPatterns = config.patterns ?? [];
+        const allPatterns = config.patterns?.order ?? [];
         const simplePatterns = allPatterns.filter(x => typeof x === 'string' || !Object.hasOwn(x, 'subpattern')) as BaseRegexPattern[]
         const complexPatterns = allPatterns.filter(x => typeof x === 'object' && Object.hasOwn(x, 'subpattern')) as RegexPatternWithSubpattern[];
 
@@ -327,12 +331,30 @@ export class ConfigurableParser {
         return this.parseOrderString(text);
     }
 
+    parseClose(messageDiv: HTMLElement): Partial<Close> | null {
+        const allPatterns = this.parserConfig.patterns?.close ?? [];
+        const simplePatterns = allPatterns.filter(x => typeof x === 'string' || !Object.hasOwn(x, 'subpattern')) as BaseRegexPattern[]
+        const complexPatterns = allPatterns.filter(x => typeof x === 'object' && Object.hasOwn(x, 'subpattern')) as RegexPatternWithSubpattern[];
+
+        const regexPatterns = simplePatterns.map(x => getRegExpObject(x));
+
+        for (const pattern of regexPatterns) {
+            const result = parseClose(messageDiv, pattern);
+
+            if (result != null) {
+                return result;
+            }
+        }
+
+        return null;
+    }
+
     parseMessage(messageDiv: HTMLElement): Message {
         const pipeline: PartialParser[] = [
             this.parseOrder.bind(this),
             parseEntry,
             parseEntryAll,
-            parseClose,
+            this.parseClose.bind(this),
             parseOpposite,
             parseSLAfterTP,
             parseSL,
