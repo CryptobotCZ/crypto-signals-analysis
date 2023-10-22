@@ -95,6 +95,10 @@ async function exportJson(orderDetails: OrderDetail[], path: string, withOrderCo
   };
 
   const ordersForExport: CornixOrder[] = orderDetails.map(order => {
+    if (order.order == null) {
+      return null as any;
+    }
+
     return {
       signalId: order.order.signalId ?? getOrderKey(order),
       coin: order.order.coin?.trim()?.toUpperCase(),
