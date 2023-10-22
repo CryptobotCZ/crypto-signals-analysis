@@ -1,0 +1,27 @@
+{
+  "name": "SMC Traders",
+  "shortcut": "smc-traders",
+  "preprocessing": [
+    {
+      "pattern": "\\s+",
+      "replacement": " "
+    },
+    {
+      "pattern": "Entry - (?<firstEntry>[\\d.]+)\\(\\d+%\\)- (?<secondEntry>[\\d.]+)\\(\\d+%\\)",
+      "replacement": "Entry - $<firstEntry> - $<secondEntry>"
+    }
+  ],
+  "patternsToIgnore": [],
+  "patterns": {
+    "order": [
+      {
+        "pattern": "/#?(?<coin>.+) - (?<direction>.+)\\s*Leverage\\s*: (?<leverage>(?:[\\dx -]+)*).*?Entry - (?<entry>[\\d\\.,\\-\\(\\)% ]+)\\s*Targets\\s*:\\s*(?<takeProfits>(?:\\d+. [\\d.]+\\s*)+)\\s*. Stoploss\\s*: (?<sl>[\\d.]+)/sui",
+        "subpattern": {
+          "entry": "/([\\d.]+)/g",
+          "takeProfits": "/\\d+. (?<targetValue>[\\d.]+)/g",
+          "leverage": "/([\\d]+)/g"
+        }
+      }
+    ]
+  }
+}
