@@ -1,0 +1,17 @@
+{
+  "name": "Bitcoin Bullets Leak",
+  "shortcut": "bb-leak",
+  "preprocessing": [],
+  "patterns": {
+    "order":  [
+      {
+        "pattern": "/\\$(?<coin>[\\w\\/]+) \\((?<direction>short|long)\\)\\s*Leverage: (?<leverage>[\\d-]+)x\\s*.*?Entry\\s*(?<entry>[\\d. to]+)\\s*OTE: (?<ote>[\\d.]+)\\s*\\nTargets\\s*(?<takeProfits>(?:[\\d.\\n])+)\\s*SL\\s*(?<sl>[\\d.]+)/sui",
+        "subpattern": {
+          "entry": "/([\\d.,]+)/g",
+          "leverage": "/[\\d]+-(?<leverage>[\\d.]+)/g",
+          "takeProfits": "/(?<targetValue>[\\d.,]+)/suig"
+        }
+      }
+    ]
+  }
+}

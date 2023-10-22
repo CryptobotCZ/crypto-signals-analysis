@@ -1,0 +1,17 @@
+{
+  "name": "Bitcoin Bullets",
+  "shortcut": "bitcoin-bullets",
+  "preprocessing": [],
+  "patterns": {
+    "order":  [
+      {
+        "pattern": "/\\$(?<coin>[\\w\\/]+)\\s*Direction: (?<direction>short|long)\\s*Exchange: (?<exchange>.*?)\\s*Leverage: (?<leverage>[\\d-]+)x.*?(?:Entry|Enter): (?<entry>[\\d., -]+)\\s*(?:Targets|TP):\\s*(?<takeProfits>[\\n\\d., -]+)\\s*SL[: -]+(?<sl>[\\d,.]+)/sui",
+        "subpattern": {
+          "entry": "/([\\d.,]+)/g",
+          "leverage": "/(?<leverage>[\\d]+)/g",
+          "takeProfits": "/(?<targetValue>[\\d.,]+)/suig"
+        }
+      }
+    ]
+  }
+}
