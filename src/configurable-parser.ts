@@ -138,7 +138,7 @@ export function parseOrderStringFromPatternWithSubpatterns(message: string, patt
         const targets = result?.targets ?? result?.takeProfits ?? [];
         const coin = result?.coin?.trim()?.toUpperCase();
         const entry = result?.entry ?? [];
-        const stopLoss = result?.sl != null ? parseFloat(result?.sl) : null;
+        const stopLoss = result?.sl != null ? cleanAndParseFloat(result?.sl) : null;
 
         const directionText = result?.direction
             ?.replace(/sell/i, 'short')
